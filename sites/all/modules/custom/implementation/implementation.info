@@ -1,0 +1,5 @@
+name = Implementation
+description = A module for implementation carry the implementation data.
+core = 7.x
+package = E-star
+version = 7.x=0.1-dev

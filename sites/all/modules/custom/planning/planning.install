@@ -1,0 +1,59 @@
+<?php
+
+function planning_schema(){
+    $schema['planning_details'] = array(
+        'description' => 'The table for storing the planning data.',
+        'fields' => array(
+            'planning_id' => array(
+                'description' => 'The primary identifier for subscriber.',
+                'type' => 'serial',
+                'not null' => TRUE,
+                'unsigned' => TRUE,
+            ),
+           'uid' => array(
+                'description' => 'User Id',
+                'type' => 'int',
+                'not null' => TRUE,
+                'default' => 0,
+            ),
+            'title' => array(
+                'description' => 'Planning Title',
+                'type' => 'varchar',
+                'length' => 255,
+                'not null' => TRUE,
+            ),
+            'problem' => array(
+                'description' => 'Problem Description',
+                'type' => 'text',
+                'size' => 'big',
+                'not null' => TRUE,
+            ),
+            'assessment_data_model' => array(
+                'description' => 'Connected Assessment Data Model',
+                'type' => 'text',
+                'size' => 'big',
+            ),
+            'assessment_data_collection' => array(
+                'description' => 'Connected Assessment Data Model with Logic Models',
+                'type' => 'text',
+                'size' => 'big',
+            ),
+            'contributing_factor' => array(
+                'description' => 'Contributing factor',
+                'type' => 'text',
+                'size' => 'big',
+            ),
+             'interventions' => array(
+                'description' => 'Interventions',
+                'type' => 'text',
+                'size' => 'big',
+            )
+        ),
+        'primary key' => array('planning_id'),
+    );
+    return $schema;
+}
+
+
+
+?>

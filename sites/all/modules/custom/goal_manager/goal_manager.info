@@ -1,0 +1,4 @@
+name = E-star Goal Manager
+description = E-star To do manager module
+core = 7.x
+package = E-star

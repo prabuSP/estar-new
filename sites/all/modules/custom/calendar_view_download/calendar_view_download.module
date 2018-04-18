@@ -1,0 +1,29 @@
+<?php
+
+function calendar_view_download_menu() {
+  $items = array();
+
+   $items['calendar-details-view-download'] = array(
+    'title' => 'Calendar Details Download', //page title
+    'description' => 'The Calendar Details download form',
+    'page callback' => 'drupal_get_form', //this is the function that will be called when the page is accessed.  for a form, use drupal_get_form
+    'page arguments' => array('calendar_details_pdf_download'), //put the name of the form here
+    'access callback' => TRUE
+  );
+
+  return $items;
+}
+
+function calendar_details_pdf_download($form){ 
+
+	$renderform = drupal_render($form);
+	$html = mb_convert_encoding($renderform, 'UTF-8', 'UTF-8');
+
+
+		$pdf=  pdf_using_mpdf_api($html, "mypdf");
+
+}
+
+
+
+?>

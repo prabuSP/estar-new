@@ -1,0 +1,8 @@
+name = Estar evalation Views
+description = Estar module For importing data from assesment tables to views
+core=7.x
+version=1.x
+dependencies[] = views
+files[] = estar_evalation.module
+files[] = views/estar_evalation.views.inc
+files[] = views/views_filter_substance.inc

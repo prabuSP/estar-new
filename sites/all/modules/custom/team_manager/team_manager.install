@@ -1,0 +1,58 @@
+<?php
+
+/**
+ * @file
+ * team_manager installation functions.
+ */
+
+/**
+ * team_manager of hook_install().
+ */
+function team_manager_schema() {
+
+       $schema['team_manager_details'] = array(
+        'description' => 'The table for storing the Team manager details.',
+        'fields' => array(
+
+                'team_manager_id' => array(
+                'description' => 'The unique Row ID.',
+                'type' => 'serial',
+                'not null' => TRUE,
+                'unsigned' => TRUE,
+            ),
+            'team_name' => array(
+             'description' => 'Team Name',
+             'type' => 'varchar',
+             'length' => 225,
+
+         ),
+            'team_members_id' => array(
+            'description' => 'Team Members Id',
+            'type' => 'text',
+            'size' => 'big',
+
+            ),
+            'creater_id' => array(
+            'description' => 'Creater ID',
+            'type' => 'int',
+            'length' => 10,
+            ),
+            'created_at' => array(
+                'description' => 'Created Date',
+                'type' => 'varchar',
+                'length' => 255,
+
+            ),
+                'updated_at' => array(
+                'description' => 'Updated Date',
+                'type' => 'varchar',
+                'length' => 255,
+
+            ),
+        ),
+
+        'primary key' => array('team_manager_id'),
+    );
+
+    return $schema;
+}

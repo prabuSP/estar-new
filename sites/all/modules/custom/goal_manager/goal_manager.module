@@ -1,0 +1,159 @@
+<?php
+//** Menu for goal list **//
+function goal_manager_menu() {
+  $menu = array();
+  $menu['goal/add'] = array(
+    'title' => 'Goal',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('goal_manager_form'),
+    'access callback' => TRUE,
+  );
+  $menu['goal/list'] = array(
+      'title' => 'Goals Lists',
+      'page callback' => 'goal_list_page',
+      'page arguments' => array(1) ,
+      'access callback' => true,
+  );
+  $menu['goal/details'] = array(
+      'title' => 'Goal Details',
+      'page callback' => 'drupal_get_form',
+      'page arguments' => array('goal_manager_edit_form',1) ,
+      'access arguments' => array('Goal Details') ,
+      'access callback' => true,
+  );
+ return $menu;
+  }
+
+//** Goal form start here **//
+
+function goal_manager_form(){
+
+  global $user;
+  $form=array();
+  $base_url = $GLOBALS['base_url'];
+  $form['goal_title'] = array(
+        '#type' =>'textfield',
+        '#title' => t('Title'),
+        '#required'=>TRUE
+  );
+  $form['metric_type'] = array(
+         '#type' => 'radios',
+         '#title' => t('Metric'),
+         '#options' => array('monthly'=>"Monthly",'quarterly'=>"Quartely"),
+         '#required'=>TRUE
+  );
+  $form['activity_set'] = array(
+        '#type' => 'radios',
+        '#title' => t('Activity Set'),
+        '#options' => array('csap'=>"CSAP 6",'cadca'=>"CADCA 7"),
+        '#required'=>TRUE
+  );
+  $form['next_btn_div_start2'] = array(
+       '#markup' => "<div class='assessment-nxt-btn implement-btn btn-separator'>"
+   );
+  $form['submit'] = array(
+       '#type' => 'submit',
+       '#value' => t('Next') ,
+   );
+
+  return $form;
+   }
+//** Goal form submit **//
+function goal_manager_form_submit($form, &$form_state){
+
+$_SESSION['goalValues']=$form_state;
+
+$form_state['redirect'] = 'goal/details/';
+
+  // $goal_id =db_insert('estar_goal_details')->fields(array(
+  //      'goal_title' => $form_state['values']['goal_title'],
+  //      'metric_type' => $form_state['values']['metric_type'],
+  //      'activity_set' => $form_state['values']['activity_set'],
+  // ))->execute();
+  //
+  // if($goal_id!=''){
+  // $form_state['redirect'] = 'goal/list';
+  // drupal_set_message($fullName." Goal is added successfully");
+  // }
+
+  //return $form;
+  }
+
+//** goal edit start here **//
+function goal_manager_edit_form(){
+  global $user;//echo "<pre>";print_r($_SESSION['goalValues']);die;
+  $form=array();
+
+  $form_state=$_SESSION['goalValues'];
+
+  $title=$form_state['values']['goal_title'];
+  $metric=$form_state['values']['metric_type'];
+  $activity=$form_state['values']['activity_set'];
+
+  $form['get-goal-details']=array("#markup"=>"<h3>Title: </h3>".$title."<br><br>
+                                  <h3>Metric:</h3> $metric <br><br>
+                                  <h3>Activity Set1:</h3>".$activity
+
+                            );
+
+
+              if($metric=="monthly"){
+                         		/* vid '33' means Data of Date Month Texanomy terms which is configured in Drupal admin */
+                         	$month_data = db_query("SELECT name, name FROM {taxonomy_term_data} WHERE vid = 33")->fetchAllKeyed();
+
+                         	$form['date_of_data'] = array(
+                         	'#type' => 'radios',
+                         	'#title' => t('Data of Date'),
+                         	'#default_value' => $dateOfData,
+                         	'#options' => $month_data,
+                         	);
+                }
+                if($metric=="quarterly"){
+                         		/* vid '32' means Data of Date Quarter Texanomy terms which is configured in Drupal admin */
+                         	$quarter_data = db_query("SELECT name, name FROM {taxonomy_term_data} WHERE vid = 32")->fetchAllKeyed();
+
+                         	$form['date_of_data'] = array(
+                         	'#type' => 'radios',
+                         	'#title' => t('Data of Date'),
+                         	'#default_value' => $dateOfData,
+                         	'#options' => $quarter_data,
+                         	);
+                }
+
+
+
+  $form['next_btn_div_start2'] = array(
+       '#markup' => "<div class='assessment-nxt-btn implement-btn btn-separator'>"
+  );
+  $form['submit'] = array(
+       '#type' => 'submit',
+       '#value' => t('Create Goal') ,
+  );
+  return $form;
+  }
+
+function goal_list_page(){
+
+  $goal_lists =db_query("SELECT * from {estar_goal_details}")->fetchAll();
+  $base_url = $GLOBALS['base_url'];
+  if (isset($goal_lists) && count($goal_lists) > 0)
+  {
+  foreach ($goal_lists as $gKey=> $gids)
+  {
+  if ($goal_lists != '')
+  {
+  $goal_title = $gids->goal_title;
+  $goal_manager_list .= '<li><div class="planning_list"><div class="left_Section">
+                        <img src=' . $record_meeting_img . ' class="white_img">
+                        <p><span>' .$goal_title  . '</span></p></div></div></li>';
+  }
+  }
+  }
+  $form['Goal_list'] = array(
+  '#markup' => '<div class="capacityDataLists_new model_list_Section"><ul> '.$goal_manager_list.'</ul><div class="assessment-nxt-btn detail_list_btn"><a href="#">
+    <img src='.$created_by_img.' class="white_img"><span>Create Team</span></a></div>'
+  );
+  return $form;
+  }
+
+?>

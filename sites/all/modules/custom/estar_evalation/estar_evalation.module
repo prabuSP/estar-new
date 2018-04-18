@@ -1,0 +1,375 @@
+<?php
+ 
+/**
+ * @file
+ * Views integration for the estar custom module
+ */
+
+/**
+* Implements hook_menu()
+*/
+ 
+function estar_evalation_menu() {
+ 	$items = array();
+	$items['evaluation-assessment/%/%'] = array( 
+		'title' => 'Evaluation - Assessment', 
+		'page callback' => 'drupal_get_form',
+		'page arguments' => array('evaluation_assessment'),
+		'access callback' => TRUE,
+		'type' => MENU_NORMAL_ITEM,
+	);
+	$items['get_graph_data'] = array(
+		'page callback' => 'get_graph_data',
+		'access callback' => TRUE,
+		'type' => MENU_CALLBACK,
+	);
+	$items['get_graph_data_table'] = array(
+		'page callback' => 'get_graph_data_table',
+		'access callback' => TRUE,
+		'type' => MENU_CALLBACK,
+	);
+	return $items;
+}
+/**
+ * Implements hook_views_api()
+ *
+ */
+ 
+function estar_evalation_views_api() {
+    return array(
+        'api' => '3',
+        'path' => drupal_get_path('module','estar_evalation'). '/views',
+    );
+}
+
+/*
+* Implements hook_form_alter()
+*/
+function estar_evalation_form_alter(&$form, &$form_state, $form_id) {
+  /*  if ($form_id == 'views_exposed_form') {
+        $view = $form_state['view'];
+        
+        if ($view->name == 'assessment_evaluation' && $view->current_display == 'page') {
+             // print "<pre>"; print_r($form); exit;
+            $form['created']['min']= array(
+            	'#type' => 'date_popup',
+            	'#date_format' => 'Y-m-d',
+            	'#date_year_range' => '-5:+5',
+
+            );
+            $form['created']['max']= array(
+            	'#type' => 'date_popup',
+            	'#date_format' => 'Y-m-d',
+            	'#date_year_range' => '-5:+5',
+
+            );
+        }
+    }*/
+    //print_r($form_id);
+   /* if ($form_id == 'user_login') { 
+    	//Print "<pre>"; print_r($form); 
+    	$form['name'] = array (
+    		'#title' => "<div class='test'>Userame</div>",
+    		'#type' => 'textfield',
+    		'#required' => 1,
+    		'#description' => 'Enter your E-Star username.',
+    	);
+
+    	$form['pass'] = array (
+            '#type' => 'password',
+            '#title' => "<div class=''> Password </div>",
+            '#description' => "Enter the password that accompanies your username.",
+            '#required' => 1,
+        );
+    }*/
+}
+
+function evaluation_assessment($form, &$form_state) {
+	$path_evaluation = drupal_get_path('module', 'estar_evalation');
+	drupal_add_js('https://www.gstatic.com/charts/loader.js', 'external');
+	drupal_add_js($path_evaluation.'/js/evaluationGraph.js', 'file');
+
+	$result = db_select('assessment_details', 'a')->fields('a')
+	->condition('a.assessment_id', arg(1), '=')->execute()->fetchAll();
+	$substance_id = $result[0]->substance_id;
+	$indicator_id = $result[0]->indicator_id;
+	$data_source_id = $result[0]->data_source_id;
+
+	$assessment_arr = db_select('assessment_details', 'a')->fields('a', array(
+    'assessment_id',
+    'date_of_data',
+  ))
+  ->condition('a.substance_id', $substance_id, '=')
+  ->condition('a.indicator_id', $indicator_id, '=')
+  ->condition('a.data_source_id', $data_source_id, '=')
+  ->execute()->fetchAll();
+
+  $metric = $result[0]->metric;
+  $gender = $result[0]->gender;
+  $ethinicity = $result[0]->ethnicity;
+
+  $assessmentDetailsHtml = "<div class='assessment_page'><div class='assessment_specification'><div class='assessment_contetnt'><div class='left_section'><strong>Population Selected:  </div><div class='right_section'>  " . get_taxonomy_term_name(arg(2)) . "</strong></div></div>";
+  $assessmentDetailsHtml.= "<div class='assessment_contetnt'><div class='left_section'><strong>Title:</div><div class='right_section'> " . $result[0]->title . "</strong></div></div>";  
+  $assessmentDetailsHtml.= "<div class='assessment_contetnt'><div class='left_section'><strong>Metric: </div><div class='right_section'> " . $metric . "</strong></div></div>";
+  $assessmentDetailsHtml.= "<div class='assessment_contetnt'><div class='left_section'><strong>Collection Period: </div><div class='right_section'> " . $result[0]->collection_period . "</strong></div></div>";
+  $assessmentDetailsHtml.= "<div class='assessment_contetnt'><div class='left_section'><strong>Gender: </div><div class='right_section'> " . $gender . "</strong> </div></div>";
+  $assessmentDetailsHtml.= "<div class='assessment_contetnt'><div class='left_section'><strong>Ethinicity: </div><div class='right_section'> " . $ethinicity . "</strong> </div></div>";
+  $assessmentDetailsHtml.= "</div></div>";
+
+  $form['evaluation-assessment'] = array(
+    '#markup' => $assessmentDetailsHtml
+  );
+
+	$genderColumn = '';
+	$ethinicityColumn = '';
+  if (isset($metric) && ($metric == "% - Percent" || $metric == "# - Number")) {
+    if ($metric == "% - Percent") {
+      $perNumStr = "Percent";
+      $perFullStr = "Percentage";
+      $perNumSym = "(%)";
+    }
+
+    if ($metric == "# - Number") {
+      $perNumStr = "Number";
+      $perFullStr = "Number";
+      $perNumSym = "";
+    }
+
+    if ($gender == "Yes") {
+      $genderColumn = "<td><strong>$perNumStr male $perNumSym</strong></td>
+      <td><strong>Sample size (male)</strong></td>
+      <td><strong>$perNumStr female $perNumSym</strong></td>
+      <td><strong>Sample size (female)</strong></td>";
+    }
+
+    if ($ethinicity == "Yes") {
+      $ethinicityColumn = "<td><strong>$perNumStr white $perNumSym</strong></td>
+      <td><strong>$perNumStr AA $perNumSym</strong></td>
+      <td><strong>$perNumStr Hisp $perNumSym</strong></td>
+      <td><strong>$perNumStr AI $perNumSym</strong></td>
+      <td><strong>$perNumStr Asian $perNumSym</strong></td>
+      <td><strong>$perNumStr other $perNumSym</strong></td>";
+    }
+
+    $rateSelColumn = "<td><strong>Overall $perFullStr</strong></td>";
+    $samplSizeCoulmn = "<td><strong>Overall Sample size</strong></td>";
+  }
+  else {
+    if ($gender == "Yes") {
+      $genderColumn = "<td><strong>Rate male</strong></td>
+      <td><strong>Sample size (male)</strong></td>
+      <td><strong>Rate female</strong></td>
+      <td><strong>Sample size (female)</strong></td>";
+    }
+
+    if ($ethinicity == "Yes") {
+      $ethinicityColumn = "<td><strong>Rate white</strong></td>
+      <td><strong>Rate AA</strong></td>
+      <td><strong>Rate Hisp</strong></td>
+      <td><strong>Rate AI</strong></td>
+      <td><strong>Rate Asian</strong></td>
+      <td><strong>Rate other</strong></td>";
+    }
+
+    $rateSelColumn = "<td><strong>Rate Selected</strong></td>";
+    $samplSizeCoulmn = "<td><strong>Sample size: Rate selected in 4a</strong></td>";
+  }
+/*
+  $form['table_head'] = array(
+    "#markup" => '
+   <div class="responsive_table"><table style="width:auto;">
+   <thead>
+   <tr>
+   <td><strong>Population</strong></td>
+   ' . $rateSelColumn . '
+   ' . $samplSizeCoulmn . '
+   ' . $genderColumn . '
+   ' . $ethinicityColumn . '</tr>
+   </thead>
+   <tbody>
+ '
+ <div class='form-item form-type-checkbox'>
+ <div class='form-checkbox'>
+ <div class='form-item form-type-checkbox'>
+ <in>
+
+ </div></div></div>
+ 
+
+</div>
+  );*/
+  $date_of_data_input = '';
+  foreach ($assessment_arr as $key => $value) {
+  	$date_of_data_input .= "<div class='form-item form-type-checkbox'><input type='checkbox' class='form-checkbox' name='dateOfData[]' value='".$value->assessment_id."'> <label>".$value->date_of_data."</label> </div>";
+  }
+
+  $form['date_of_data'] = array(
+  	"#markup" => "<div class='form-item form-type-checkboxes '><label>Please select date of data:</label></div> <div class='form-checkboxes'> ".$date_of_data_input." </div>",
+  );
+
+  $widthStyle = 'style="width:100%;"';
+  //foreach ($assessment_arr as $key => $value) {
+
+  	if (isset($metric) && ($metric == "% - Percent" || $metric == "# - Number")) { 
+
+  		if ($gender == "Yes") {
+	      $genderColumn = "<div class='form-item form-type-checkbox'>
+	      <input type='checkbox' class='form-checkbox' name='population[]' value='rate_male'><label>$perNumStr male $perNumSym</label> </div>
+	      <div class='form-item form-type-checkbox'><label>Sample size (male)</label> <input type='checkbox' class='form-checkbox' name='population[]' value='sample_size_male'></div>
+	      <div class='form-item form-type-checkbox'><label>$perNumStr female $perNumSym</label> <input type='checkbox' class='form-checkbox' name='population[]' value='rate_female'></div>
+	      <div class='form-item form-type-checkbox'><label>Sample size (female)</label> <input type='checkbox' class='form-checkbox' name='population[]' value='sample_size_female'></div>";
+	    }
+
+	    if ($ethinicity == "Yes") {
+	      $ethinicityColumn = "<div class='form-item form-type-checkbox'><label>$perNumStr white $perNumSym</label> <input type='checkbox' class='form-checkbox' name='population[]' value='rate_white'></div>
+	      <div class='form-item form-type-checkbox'><label>$perNumStr AA $perNumSym</label> <input type='checkbox' class='form-checkbox' name='population[]' value='rate_aa'></div>
+	      <div class='form-item form-type-checkbox'><label>$perNumStr Hisp $perNumSym</label> <input type='checkbox' class='form-checkbox' name='population[]' value='rate_hisp'></div>
+	      <div class='form-item form-type-checkbox'><label>$perNumStr AI $perNumSym</label> <input type='checkbox' class='form-checkbox' name='population[]' value='rate_ai'></div>
+	      <div class='form-item form-type-checkbox'><label>$perNumStr Asian $perNumSym</label> <input type='checkbox' class='form-checkbox' name='population[]' value='rate_asian'></div>
+	      <div class='form-item form-type-checkbox'><label>$perNumStr other $perNumSym</label> <input type='checkbox' class='form-checkbox' name='population[]' value='rate_other'></div>";
+	    }
+
+	    $rateSelColumn = "<div class='form-item form-type-checkbox'><label>Overall $perFullStr</label> <input type='checkbox' class='form-checkbox' name='population[]' value='rate'></div>";
+	    $samplSizeCoulmn = "<div class='form-item form-type-checkbox'><label>Overall Sample size</label> <input type='checkbox' class='form-checkbox' name='population[]' value='sample_size'></div>";
+
+	    //$data_of_data .= $value->date_of_data;
+  	}
+  	else { 
+  		if ($metric == "rate @ 100" || $metric == "rate @ 1000" || $metric == "rate @ 10,000" || $metric == "rate @ 100,000" || $metric == "rate @ 1000,000") {
+        $metricValueArr = explode("@", $metric);
+        $metricValue = $metricValueArr[1];
+      }
+  		if ($gender == "Yes") {
+	      $genderColumn = "<div class='form-item form-type-checkbox'><label>Rate male</label> <input type='checkbox' class='form-checkbox' name='population[]' value='rate_male'></div>
+	      <div class='form-item form-type-checkbox'><label>Sample size (male)</label> <input type='checkbox' class='form-checkbox' name='population[]' value='sample_size_male'></div>
+	      <div class='form-item form-type-checkbox'><label>Rate female</label> <input type='checkbox' class='form-checkbox' name='population[]' value='rate_female'></div>
+	      <div class='form-item form-type-checkbox'><label>Sample size (female)</label> <input type='checkbox' class='form-checkbox' name='population[]' value='sample_size_female'></div>";
+	    }
+
+	    if ($ethinicity == "Yes") {
+	      $ethinicityColumn = "<div class='form-item form-type-checkbox'><label>Rate white</label> <input type='checkbox' class='form-checkbox' name='population[]' value='rate_white'></div>
+	      <div class='form-item form-type-checkbox'><label>Rate AA</label> <input type='checkbox' class='form-checkbox' name='population[]' value='rate_aa'></div>
+	      <div class='form-item form-type-checkbox'><label>Rate Hisp</label> <input type='checkbox' class='form-checkbox' name='population[]' value='rate_hisp'></div>
+	      <div class='form-item form-type-checkbox'><label>Rate AI</label> <input type='checkbox' class='form-checkbox' name='population[]' value='rate_ai'></div>
+	      <div class='form-item form-type-checkbox'><label>Rate Asian</label> <input type='checkbox' class='form-checkbox' name='population[]' value='rate_asian'></div>
+	      <div class='form-item form-type-checkbox'><label>Rate other</label> <input type='checkbox' class='form-checkbox' name='population[]' value='rate_other'></div>";
+	    }
+	    $rateSelColumn = "<div class='form-item form-type-checkbox'><label>Rate Selected</label> <input type='checkbox' class='form-checkbox' name='population[]' value='rate'></div>";
+      $samplSizeCoulmn = "<div class='form-item form-type-checkbox full-width'><p>Metric Value Rate @ ".$metricValue."</p> </div>";
+  	}
+
+  	$form['table_body' . $key] = array(
+  		"#markup" => '<div class="form-item form-type-checkboxes"><label>Please select Population:</label></div>
+  		<div class="form-checkboxes">
+  				' . $samplSizeCoulmn . '
+					' . $rateSelColumn . '
+					' . $genderColumn . '
+					' . $ethinicityColumn . '
+				</div>
+  		'
+  	);
+  	//$data_of_data .= $value->date_of_data."-";
+  //}
+
+  //$data_of_data = rtrim($data_of_data, "-");
+  $form['hidPopulation'] = array (
+    '#type' => 'hidden',
+    '#value' => arg(2),
+  );
+  $form['table_footer'] = array (
+    "#markup" => '</tbody></table></div>'
+  );
+  $form['next_btn_div_start'] = array (
+    '#markup' => "<div class='assessment-nxt-btn'>"
+  );
+  $form['over_submit_save_button'] = array (
+    '#type' => 'button',
+    '#value' => t('Show on Graph'),
+  );
+  $form['next_btn_div_end'] = array (
+    '#markup' => "</div><div id='responsetxt'></div> 
+    							<div class='charts-space'><h3>Evaluation Line Chart</h3><div id='chart_div_line' class=''></div></div>
+    							<div class='charts-space'><h3>Evaluation Bar Chart</h3><div id='chart_div_bar' class=''></div></div>
+    							<div id='data_table'></div>"
+  );
+
+	return $form; 
+}
+
+function evaluation_assessment_submit($form, &$form_state) { 
+
+	//print "<pre>"; print_r($_REQUEST); exit;
+
+}
+
+//Supportive function to get graph data based on assessment and population
+function get_graph_data() {
+	$assessment_id = $_REQUEST['date_of_data'];
+	$population = $_REQUEST['population'];
+	$params = $_REQUEST['params'];
+	
+	$result = db_select('assessment_rate_details', 'a');
+	$result->Join('assessment_details','b','a.assessment_id = b.assessment_id');
+	$result->fields('b', array('date_of_data'));
+	$result->fields('a', $params);	
+	$result_data = $result->condition('a.assessment_id', $assessment_id, 'IN')
+	->condition('a.population_value', $population, '=')
+	->execute()->fetchAll();
+	
+	$graph_data[0] = array("Date of Data");
+
+	$param_label = array('rate'=>'Rate Selected','sample_size'=>'Overall Sample size', 'rate_male'=>'Rate male', 'sample_size_male'=>'Sample size (male)', 'rate_female'=>'Rate female', 'sample_size_female'=>'Sample size (female)', 'rate_white'=>'Rate white', 'rate_aa'=>'Rate AA', 'rate_hisp'=>'Rate Hisp','rate_ai'=>'Rate AI','rate_asian'=>'Rate Asian','rate_other'=>'Rate Other');
+
+	foreach ($params as $key => $value) {
+		array_push($graph_data[0], $param_label[$value]);
+	}
+	foreach ($result_data as $key => $value) {
+		$param = array();
+		$data = (array)$value;
+		foreach ($data as $key_var => $value_var) {
+				$param[] = ($key_var == 'date_of_data' ? $value_var:(int)$value_var);
+		}
+		$graph_data[$key+1] = $param;
+	}
+
+	print drupal_json_encode($graph_data);
+
+}
+
+function get_graph_data_table() {
+
+	$assessment_id = $_REQUEST['date_of_data'];
+	$population = $_REQUEST['population'];
+	$params = $_REQUEST['params'];
+	
+	$result = db_select('assessment_rate_details', 'a');
+	$result->Join('assessment_details','b','a.assessment_id = b.assessment_id');
+	$result->fields('b', array('date_of_data'));
+	$result->fields('a', $params);	
+	$result_data = $result->condition('a.assessment_id', $assessment_id, 'IN')
+	->condition('a.population_value', $population, '=')
+	->execute()->fetchAll();
+	
+
+	$param_label = array('rate'=>'Rate Selected','sample_size'=>'Overall Sample size', 'rate_male'=>'Rate male', 'sample_size_male'=>'Sample size (male)', 'rate_female'=>'Rate female', 'sample_size_female'=>'Sample size (female)', 'rate_white'=>'Rate white', 'rate_aa'=>'Rate AA', 'rate_hisp'=>'Rate Hisp','rate_ai'=>'Rate AI','rate_asian'=>'Rate Asian','rate_other'=>'Rate Other');
+
+	$table_header = "<tr><td><strong>Date of Data</strong></td>";
+	foreach ($params as $key => $value) {
+		$table_header .= "<td><strong>".$param_label[$value]."</strong></td>";
+	}
+	$table_header .="</tr>";
+	$table_body = '';
+	foreach ($result_data as $key => $value) { 
+		$data = (array)$value;
+		$table_body .= "<tr>";
+		foreach ($data as $key_var => $value_var) {
+			$table_body .= "<td><strong>".$value_var."</strong></td>";
+		}
+		$table_body .= "</tr>";
+	}
+	print $table_data =  '<div class="responsive_table"><h3>Evaluation Data Table</h3><table>
+   <thead>' . $table_header . '</thead>
+   <tbody>'. $table_body .'</tbody>
+   </table>
+   </div>';
+}

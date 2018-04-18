@@ -1,0 +1,262 @@
+<?php
+
+function capacity_schema(){
+    $schema['capacity_details'] = array(
+        'description' => 'The table for storing the capacity data.',
+        'fields' => array(
+		
+		      
+
+                 'capacity_id' => array (
+                 'description' => t('The unique Row ID'),
+                 'type' => 'serial',
+               ),
+			      'contributing_factor_models' => array(
+                'description' => 'Contributing factor Logic models',
+                'type' => 'text',
+                'size' => 'big',
+            ),
+            
+            'intervention_models' => array(
+                'description' => 'Interventions Logic models',
+                'type' => 'text',
+                'size' => 'big',
+            ),
+       
+                'Record' => array(
+                'description' => 'Record Details',
+                'type' => 'varchar',
+                'length' => 255,
+                'not null' => TRUE,
+            ),
+                'Record_meeting' => array(
+                'description' => 'Record meeting',
+                'type' => 'varchar',
+                'length' => 255,
+            ),
+
+                'Record_tranning' => array(
+                'description' => 'Record tranning',
+                'type' => 'varchar',
+                'length' => 225,
+            ),
+
+                'personConductingContent' => array(
+                'description' => 'Staff list',
+                'type' => 'text',
+                'size' => 'big',
+            ),
+                
+                'startdatetime' => array(
+                'description' => 'Date of Data',
+                'type' => 'varchar',
+                'length' => 255,
+
+            ),
+
+                'enddatetime' => array(
+                'description' => 'Date of Data',
+                'type' => 'varchar',
+                'length' => 255,
+       
+            ),
+
+               'Length_of_services' => array(
+                'description' => 'Length of services',
+                'type' => 'varchar',
+                'length' => 255,
+            ),
+
+                'location' => array(
+                'description' => 'location',
+                'type' => 'varchar',
+                'length' => 255,
+            ),
+
+                'country' => array(
+                'description' => 'Country',
+                'type' => 'varchar',
+                'length' => 255,
+                
+            ),
+
+               'address_1' => array(
+                'description' => 'Address 2',
+                'type' => 'varchar',
+                'length' => 255,
+             
+            ),
+
+                'address_2' => array(
+                'description' => 'Address 2',
+                'type' => 'varchar',
+                'length' => 255,
+              
+            ),
+
+                'city' => array(
+                'description' => 'city',
+                'type' => 'varchar',
+                'length' => 255,
+            ),
+
+                'states' => array(
+                'description' => 'states',
+                'type' => 'varchar',
+                'length' => 255,
+        
+            ),
+
+                'zip_code' => array(
+                'description' => 'zip code',
+                'type' => 'varchar',
+                'length' => 255,
+         
+            ),
+
+                'number_adult_served' => array(
+                'description' => 'Number of adult served',
+                'type' => 'varchar',
+                'length' => 255,
+               
+            ),
+
+                'number_youth_served' => array(
+                'description' => 'Number of youth served',
+                'type' => 'varchar',
+                'length' => 255,
+             
+            ),
+
+                'Number_Business_Attending' => array(
+                'description' => 'Number of Business Attending',
+                'type' => 'varchar',
+                'length' => 255,
+               
+            ),
+
+                'Members_Invloved' => array(
+                'description' => 'Members Invloved',
+                'type' => 'text',
+                'size' => 'big',
+              
+            ),
+
+                'description_of_purpose' => array(
+                'description' => 'Description of purpose',
+                'type' => 'varchar',
+                'length' => 225,
+               
+            ),
+
+                'description_of_outcome' => array(
+                'description' => 'Description of outcome',
+                'type' => 'varchar',
+                'length' => 225,
+               
+            ),
+
+               'Donation_select' => array(
+                'description' => 'Donation_select',
+                'type' => 'varchar',
+                'length' => 225,
+               
+            ),
+
+                'Monetary_Value' => array(
+                'description' => 'Monetary Value',
+                'type' => 'varchar',
+                'length' => 225,
+              
+            ),
+
+                'Comment' => array(
+                'description' => 'comment',
+                'type' => 'varchar',
+                'length' => 225,
+           
+            ),
+
+                'Attachments_fid' => array(
+                'description' => 'file',
+                'type' => 'varchar',
+                'length' => 255,
+              
+            ),
+
+                'Attachments_notes' => array(
+                'description' => 'Attachments notes',
+                'type' => 'varchar',
+                'length' => 225,
+           
+            ),
+             'is_pending' => array(
+                'description' => 'Pending',
+                'type' => 'varchar',
+                'length' => 10,
+           
+            ),
+                'signature' => array(
+                'description' => 'Attachments notes',
+                'type' => 'int',
+                'length' => 10,
+           
+            ),
+        ),
+        'primary key' => array('capacity_id'),
+    );
+    
+    $schema['capacity_details_info'] = array(
+        'description' => 'The table for storing the Capacity create,edit operations tracking.',
+        'fields' => array(
+			'capacity_info_id' => array(
+                'description' => 'Capacity Info Id',
+				'type' => 'serial',
+				'not null' => TRUE,
+				'unsigned' => TRUE,
+           
+            ),
+			'created_uid' => array(
+                'description' => 'Created User Id',
+                'type' => 'int',
+                'length' => 10,
+           
+            ),
+             'updated_uid' => array(
+                'description' => 'Updated User Id',
+                'type' => 'int',
+                'length' => 10,
+           
+            ),
+             'capacity_id' => array(
+                'description' => 'Capacity ID',
+                'type' => 'int',
+                'length' => 10,
+           
+            ),
+            'created_at' => array(
+                'description' => 'Created Date',
+                'type' => 'varchar',
+                'length' => 255,
+
+            ),
+                'updated_at' => array(
+                'description' => 'Updated Date',
+                'type' => 'varchar',
+                'length' => 255,
+       
+            ),
+			
+        ),
+        'primary key' => array('capacity_info_id'),
+    );
+    
+    
+    return $schema;
+}
+
+
+
+?>
+
+

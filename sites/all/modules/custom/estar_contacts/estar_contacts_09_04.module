@@ -1,0 +1,347 @@
+<?php
+
+/**
+ * MOU Manager of hook_menu
+ */
+function estar_contacts_menu() {
+    $menu = array();
+    $menu['contact/add'] = array
+  (
+    'title' => 'Estar Contacts',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('estar_contacts_form'),
+    'access callback' => TRUE,
+  );
+  $menu['contact/list'] = array(
+      'title' => 'Contact Lists',
+      'page callback' => 'contact_list_page',
+      'page arguments' => array(1) ,
+      'access callback' => true,
+  );
+
+    return $menu;
+}
+
+/**
+ * [estar get all contacts list]
+ * @param  [type] $node [description]s
+ * @return [type]       [description]
+ */
+function estar_contacts_form(){
+	//drupal_set_title("");
+  global $user;
+  $form=array();
+
+   $form['first_name'] = array(
+       '#type' => 'textfield',
+       '#title' => t('First Name'),
+       '#attributes' => array('id'=>"first-id"),
+       '#required'=>TRUE,
+   );
+   $form['last_name'] = array(
+       '#type' => 'textfield',
+       '#title' => t('Last Name'),
+       '#attributes' => array('id'=>"last-id"),
+       '#required'=>TRUE,
+   );
+   $form['address'] = array(
+       '#type' => 'textfield',
+       '#title' => 'Address',
+       '#attributes' => array('id'=>"address-id"),
+       '#default_value' => $item->city,
+   );
+
+   $form['states'] = array(
+       '#prefix' => '<div class="select_section capacity_select_Section">',
+       '#suffix' => '</div>',
+       '#title' => t('State') ,
+       '#type' => 'select',
+       '#attributes' => array('id'=>"state-id"),
+       '#options' => array(
+           '' => "<--Select-->",
+           'Alabama' => "Alabama",
+           'Alaska' => "Alaska",
+           'Arizona' => "Arizona",
+           'Arkansas' => "Arkansas",
+           'California' => "California",
+           'Colorado' => "Colorado",
+           'Connecticut' => "Connecticut",
+           'District of Columbia' => "District of Columbia",
+           'Flocapacity_ida' => "Flocapacity_ida",
+           'Georgia' => "Georgia",
+           'Hawaii' => "Hawaii",
+           'Iowa' => "Iowa",
+           'Kansas' => "Kansas",
+           'Louisiana' => "Louisiana",
+           'Maine' => "Maine",
+           'Massachusetts' => "Massachusetts",
+           'Michigan' => "Michigan",
+           'Minnesota' => "Minnesota",
+           'Mississippi' => "Mississippi",
+           'Missouri' => "Missouri",
+           'Montana' => "Montana",
+           'Nebraska' => "Nebraska",
+           'Nevada' => "Nevada",
+           'New Hampshire' => "New Hampshire",
+           'New Jersey' => "New Jersey",
+           'New Mexico' => "New Mexico",
+           'New York' => "New York",
+           'North Carolina' => "North Carolina",
+           'North Dakota' => "North Dakota",
+           'Ohio' => "Ohio",
+           'Oklahoma' => "Oklahoma",
+           'Oregon' => "Oregon",
+           'Pennsylvania' => "Pennsylvania",
+           'Rhode Island' => "Rhode Island",
+           'South Carolina' => "South Carolina",
+           'South Dakota' => "South Dakota",
+           'Tennessee' => "Tennessee",
+           'Texas' => "Texas",
+           'Utah' => "Utah",
+           'Vermont' => "Vermont",
+           'Virginia' => "Virginia",
+           'Washington' => "Washington",
+           'West Virginia' => "West Virginia",
+           'Wisconsin' => "Wisconsin",
+           'Wyoming' => "Wyoming",
+           'Armed Forces (Americas)' => "Armed Forces (Americas)",
+           'Armed Forces (Europe, Canada, Middle East, Africa)' => "Armed Forces (Europe, Canada, Middle East, Africa)",
+           'Armed Forces (Pacific)' => "Armed Forces (Pacific)",
+           'American Samoa' => "American Samoa",
+           'Federated States of Micronesia' => "Federated States of Micronesia",
+           'Guam' => "Guam",
+           'Marshall Islands' => "Marshall Islands",
+           'Northern Mariana Islands' => "Northern Mariana Islands",
+           'Palau' => "Palau",
+           'Puerto Rico' => "Puerto Rico",
+           'Virgin Islands' => "Virgin Islands"
+       ) ,
+       '#default_value' => $item->states,
+   );
+
+   $form['city'] = array(
+       '#type' => 'textfield',
+       '#title' => 'City',
+       '#attributes' => array('id'=>"city-id"),
+       '#default_value' => $item->city,
+   );
+
+   $form['zip_code'] = array(
+       '#type' => 'textfield',
+       '#title' => t('Zipcode / Postal code') ,
+       '#element_validate' => array(
+           'element_validate_number'
+       ) ,
+       '#attributes' => array('id'=>"zip-id"),
+       '#maxlength' => 6,
+       '#default_value' => $item->zip_code,
+       '#suffix' => '</table>
+   ', // Don't forget to close the table rows, and finally the table.
+
+   );
+   $form['email'] = array(
+       '#type' => 'textfield',
+       '#title' => t('Email'),
+       '#attributes' => array('id'=>"em-id"),
+       '#required'=>TRUE,
+   );
+   $form['phone'] = array(
+       '#type' => 'textfield',
+       '#title' => t('Phone Number'),
+       '#attributes' => array('id'=>"ph-id"),
+       '#required'=>TRUE,
+   );
+   $form['primary-sector'] = array(
+       '#type' => 'textfield',
+       '#title' => t('Primary Sector'),
+       '#attributes' => array('id'=>"primary-sec-id"),
+   );
+
+
+   $form['organization'] = array(
+       '#type' => 'textfield',
+       '#title' => t('Company / Organization / Agency'),
+       '#attributes' => array('id'=>"org-id"),
+   );
+
+   $primary_data = getSectors($secID="6");
+
+   $form['primary-sector-list'] = array(
+		'#prefix' => '<div class="select_section capacity_select_Section">',
+       '#suffix' => '</div>',
+       '#type' => 'select',
+       '#title' => t('Primary Sectors'),
+       '#options' => $primary_data,
+       '#required'=>TRUE,
+       '#attributes' => array('id'=>"primary-sec-id"),
+   );
+
+   $sec_data = getSectors($secID="7");
+
+   $form['secondary-sector-list'] = array(
+   '#prefix' => '<div class="select_section capacity_select_Section">',
+       '#suffix' => '</div>',
+       '#type' => 'select',
+       '#title' => t('Secondary Sectors'),
+       '#options' => $sec_data,
+       '#attributes' => array('id'=>"secondary-sec-id"),
+   );
+
+
+
+   $form['hourly-time'] = array(
+       '#type' => 'radios',
+       '#title' => t('Can their hourly time be counted'),
+       '#options' => array('Yes'=>"Yes",'No'=>"No"),
+       '#required'=>TRUE,
+       '#attributes' => array('id'=>"hourly-t-id"),
+   );
+   $form['hour-description'] = array(
+       '#type' => 'textfield',
+       '#title' => t('If yes, please describe'),
+       '#attributes' => array('id'=>"hour-describe"),
+   );
+   $form['hour-value'] = array(
+       '#type' => 'textfield',
+       '#title' => t('Hourly value of this service'),
+       '#attributes' => array('id'=>"hour-val"),
+   );
+
+   $form['hid_username'] = array(
+       '#type' => 'hidden',
+       '#default_value' => (isset($user->id) && $user->id!="")?$user->id:"",
+       '#attributes'=>array('id'=>"hidUserName")
+   );
+
+
+   $form['next_btn_div_start2'] = array(
+       '#markup' => "<div class='assessment-nxt-btn implement-btn '>"
+   );
+   $form['submit'] = array(
+       '#type' => 'submit',
+       '#value' => t('Create New Contact') ,
+   );
+   $form['next_btn_div_end2'] = array(
+       '#markup' => "</div>"
+   );
+
+   $form['submit-btn-separator'] = array(
+       '#markup' => '<br><br>'
+   );
+
+   return $form;
+
+}
+
+function estar_contacts_form_submit($form, &$form_state){ //echo "<pre>";print_r($form_state);die;
+global $user;
+  $contact_date_creation = date("F j, Y");
+  $fullName=$form_state['input']['first_name']." ".$form_state['input']['last_name'];
+  $contact_id = db_insert('estar_contacts_details')->fields(array(
+    'user_id' => $user->uid,
+    'first_name' => $form_state['input']['first_name'],
+    'last_name' => $form_state['input']['last_name'],
+    'address' => $form_state['input']['address'],
+    'states' => $form_state['input']['states'],
+    'city' => $form_state['input']['city'],
+    'zip_code' => $form_state['input']['zip_code'],
+    'email' => $form_state['input']['email'],
+    'phone' => $form_state['input']['phone'],
+    'primary_sector_text' => $form_state['input']['primary-sector'],
+    'organization' => $form_state['input']['organization'],
+    'primary_sector_select' => $form_state['input']['primary-sector-list'],
+    'secondary_sector_select' => $form_state['input']['secondary-sector-list'],
+    'hourly_time' => $form_state['input']['hourly-time'],
+      'hourly_description' => $form_state['input']['hour-description'],
+      'hourly_value' => $form_state['input']['hour-value'],
+      'created_at' => $contact_date_creation,
+      'updated_at' => $contact_date_creation,
+  ))->execute();
+  if($contact_id!=''){
+    $form_state['redirect'] = 'contact/list';
+    drupal_set_message($fullName." Contact added successfully");
+  }
+}
+
+function contact_list_page(){
+
+$contact_lists =db_query("SELECT * from {estar_contacts_details}")->fetchAll();
+
+   //echo "<pre>";print_r($mou_manager_lists);die;
+
+   //echo "<pre>";print_r($personConduct_id_arr);die;
+if(isset($contact_lists) && count($contact_lists)>0){
+
+   $form['person_Conducting_starts'] = array(
+       '#markup' => "<div id='person_Conducting_changehidden'>"
+   );
+   $form['personConducting'] = array(
+       '#markup' => '<div class="responsive_table"></span></label><table id="ciaContactTab" class="sticky-enabled table-select-processed">
+ <thead><tr>
+ <th>First Name</th>
+ <th>Last Name</th>
+ <th>Email</th>
+ <th>Phone</th>
+ <th>Organization</th>
+ <th>Primary Sector</th>
+ </tr></thead>
+ <tbody>'
+   );
+   $usersRow = '';
+   foreach ($contact_lists as $mouUser)
+   { //echo "<pre>";print_r($mouUser);die;
+           $usersRow .= '<tr class="odd">
+             <td>' . (($mouUser->first_name != "") ? $mouUser->first_name : "") . '</td>
+             <td>' . (($mouUser->last_name != "") ? $mouUser->last_name : "") . '</td>
+             <td>' . (($mouUser->email != "") ? $mouUser->email : "") . '</td>
+             <td>' . (($mouUser->phone != "") ? $mouUser->phone : "") . '</td>
+             <td>' . (($mouUser->organization != "") ? $mouUser->organization : "") . '</td>
+             <td>' . (($mouUser->primary_sector_select != "") ? $mouUser->primary_sector_select : "") . '</td>
+             </tr>';
+
+   }
+
+
+   $form['personConductingContent'] = array(
+       '#markup' => $usersRow,
+   );
+
+   $form['personConductingEnd'] = array(
+       '#markup' => '</tbody></table></div>'
+   );
+   $form['person_Conducting_end'] = array(
+       '#markup' => '</div><br><br>'
+   );
+ }else{
+   $form['personConducting'] = array(
+       '#markup' => '<div class="responsive_table"></span></label><table id="personConductingTab" class="sticky-enabled table-select-processed">
+ <thead><tr>
+ <th>First Name</th>
+ <th>Last Name</th>
+ <th>Email</th>
+ <th>Phone</th>
+ </tr></thead>
+ <tbody>'
+   );
+
+       $form['personConductingEnd1'] = array(
+           '#markup' => '<tr><td colspan="4">CIA manager list is empty.</td></tr>'
+       );
+       $form['personConductingEnd'] = array(
+           '#markup' => '</tbody></table></div>'
+       );
+
+ }
+
+   return $form;
+}
+
+function getSectors($secID){
+  return $primary_data = db_select('taxonomy_term_data', 'c')
+   ->fields('c',array('name','name'))
+   ->condition('vid',$secID,'=')
+   ->execute()
+   ->fetchAllKeyed();
+}
+
+?>

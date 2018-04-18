@@ -1,0 +1,128 @@
+<?php
+/**
+ * @file
+ * Show a simple login form to anonymous users and a 'Welcome username'|logout
+ * to authenticated users.
+ */
+
+/**
+ * Implements hook_block_info().
+ */
+function welcome_username_block_info() {
+  $blocks = array();
+  $blocks['welcome_username'] = array(
+    'info' => t("Welcome Username Login/Logou"),
+    'cache' => DRUPAL_NO_CACHE,
+  );
+  return $blocks;
+}
+
+/**
+ * Implements hook_block_view().
+ */
+function welcome_username_block_view($delta = "") {
+  $block = array();
+  switch ($delta) {
+    case "welcome_username":
+      // Don' show a title.
+      $block['subject'] = t("");
+
+      // For anonymous users load a simple login form.
+      if (user_is_anonymous()) {
+        $form = drupal_get_form("user_login");
+
+        // Placeholders.
+        $form['name']['#attributes']['placeholder'] = $form['name']['#description'];
+        unset($form['name']['#description']);
+
+        $form['pass']['#attributes']['placeholder'] = $form['pass']['#description'];
+        unset($form['pass']['#description']);
+
+      //  $block['content'] = drupal_render($form);
+      }
+
+      // For authenticated users show the 'Welcome username' block with a
+      // link to the user account and a logout link.
+      else {
+        // Load user object.
+        global $user;
+
+        // Show realname if available.
+        if (module_exists('realname')) {
+          $name = realname_load($user);
+        }
+        if (!isset($name) || strlen($name) < 1) {
+          $name = $user->name;
+        }
+
+        // Load string from variable table if set.
+        $welcome_string = variable_get('welcome_username_welcome_string', 'Welcome');
+		$welcome_edit_string = variable_get('', 'My');
+		$welcome_edit_string0 = variable_get('', 'To');
+		$welcome_edit_string1 = variable_get('', 'My');
+        $logout_string = variable_get('welcome_username_logout_string', 'Sign Out');
+
+        // Create a link to the user profile page.
+        $user_profile_link = l(t($welcome_string) . " " . $name, 'user/' . $user->uid);
+		/*$user_profile_link0 = l(t($welcome_edit_string0) . " " .Dos, 'user/' . $user->uid .'/edit');
+		$user_profile_link2 = l(t($welcome_edit_string) . " " .info, 'user/' . $user->uid .'/edit');
+		$user_profile_link1 = l(t($welcome_edit_string) . " " .program, 'user/' . $user->uid .'/edit');*/
+		
+
+		$user_profile_link0 = l(t($welcome_edit_string0) . " ", 'user/' . $user->uid .'/edit');
+		$user_profile_link2 = l(t($welcome_edit_string) . " ", 'user/' . $user->uid .'/edit');
+		$user_profile_link1 = l(t($welcome_edit_string) . " ", 'user/' . $user->uid .'/edit');
+		
+        // Create a logout link.
+        $user_logout_link = l(t($logout_string), "user/logout");
+
+        // Create the message shown on the frontend.
+      
+		
+       $logged_in_user_message = "<ul id='top_menu'>";
+			$logged_in_user_message .= "<li class='dropdown profile_name_cls'>";
+				$logged_in_user_message .= "<span class='caret dropdown_caret'>";
+					$logged_in_user_message .= "";
+				$logged_in_user_message .= "</span>";
+				
+				$logged_in_user_message .= $user_profile_link;
+					$logged_in_user_message .= "<ul class='dropdown-menu'>";
+						
+						$logged_in_user_message .= "<li class='profile_icfo'>";
+							$logged_in_user_message .= $user_profile_link2;
+						$logged_in_user_message .= "</li>";
+						$logged_in_user_message .= "<li class='profile_signout'>";
+							$logged_in_user_message .= $user_logout_link;
+						$logged_in_user_message .= "</li>";
+					$logged_in_user_message .= "</ul>";
+			$logged_in_user_message .= "</li>";
+			
+			
+			
+			$logged_in_user_message .= "<li class='dropdown'>";
+				$logged_in_user_message .= "<span class='caret dropdown_caret'>";
+					$logged_in_user_message .= "";
+				$logged_in_user_message .= "</span>";
+				$logged_in_user_message .= "<a href='#' class='profile_program_top'>";
+					$logged_in_user_message .= "Program ";
+				$logged_in_user_message .= "</a>";
+					$logged_in_user_message .= "<ul class='dropdown-menu'>";
+						$logged_in_user_message .= "<li class='profile_program'>";
+							$logged_in_user_message .= $user_profile_link1;
+						$logged_in_user_message .= "</li>";
+						$logged_in_user_message .= "<li class='profile_todos'>";
+							$logged_in_user_message .= $user_profile_link0;
+						$logged_in_user_message .= "</li>";
+						
+					$logged_in_user_message .= "</ul>";
+					
+			$logged_in_user_message .= "</li>";
+		$logged_in_user_message .= "</ul>";
+		
+        $block['content'] = $logged_in_user_message;
+      }
+
+      // Return the rendered block;
+      return $block;
+  }
+}

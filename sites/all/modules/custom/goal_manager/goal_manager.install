@@ -1,0 +1,41 @@
+<?php
+function goal_manager_schema(){
+
+    $schema['estar_goal_details'] = array(
+
+        'description' => 'The table for storing the goal data.',
+           'fields' => array(
+
+            'goal_id' => array(
+                'description' => 'The primary identifier for subscriber.',
+                'type' => 'serial',
+                'not null' => TRUE,
+                'unsigned' => TRUE,
+            ),
+
+            'goal_title' => array(
+                'description' => 'Goal Title',
+                 'type' => 'varchar',
+                 'length' => 255,
+                 'not null' => TRUE,
+            ),
+
+            'metric_type' => array(
+                'description' => 'metric title',
+                'type' => 'varchar',
+                 'length' => 255,
+                 'not null' => TRUE,
+            ),
+            'activity_set' => array(
+                'description' => 'Activity Details',
+                'type' => 'varchar',
+                'length' => 255,
+                'not null' => TRUE,
+            ),
+        ),
+
+        'primary key' => array('goal_id'),
+    );
+    return $schema;
+}
+?>

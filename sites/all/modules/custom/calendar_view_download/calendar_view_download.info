@@ -1,0 +1,5 @@
+name = "Calendar View Download"
+description = Event Calendar Module carries both Capacity & Implementation report data's.
+core = 7.x
+package = E-star
+version = 7.x=0.1-dev

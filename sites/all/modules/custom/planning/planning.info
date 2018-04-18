@@ -1,0 +1,5 @@
+name = "Planning"
+description = A module for assesment carry the planning data.
+core = 7.x
+package = E-star
+version = 7.x=0.1-dev

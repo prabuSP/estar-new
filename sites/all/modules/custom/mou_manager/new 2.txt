@@ -1,0 +1,1082 @@
+<?php
+//include_once('mailtest.php');
+/**
+ * MOU Manager of hook_menu
+ */
+function mou_manager_menu() {
+    $menu = array();
+    $menu['mou_manager'] = array
+  (
+    'title' => 'CIA Manager',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('invite_volunteer_form'),
+    'access callback' => TRUE,
+  );
+  $menu['mou_manager/get_manager_details'] = array
+(
+  'title' => 'CIA Manager Details',
+  'page callback' => 'get_manager_details_list',
+  'page arguments' => array(1),
+  'access callback' => TRUE,
+);
+$menu['mou_manager/list'] = array(
+    'title' => 'CIA Manager List',
+    'page callback' => 'mou_manager_list_page',
+    'page arguments' => array(1) ,
+    'access callback' => true,
+);
+$menu['mou_manager/view/%'] = array(
+    'title' => 'CIA Manager View',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('mou_manager_view_page', 1),
+    'access callback' => true,
+);
+$menu['mou_manager/renew/%'] = array(
+    'title' => 'CIA Manager Renewal',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('mou_manager_renew_page', 1),
+    'access callback' => true,
+);
+
+$menu['mou_manager/list_view/%'] = array(
+    'title' => 'CIA Manager List View',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('mou_manager_list_view_page', 1),
+    'access callback' => true,
+);
+
+    return $menu;
+}
+
+function get_manager_details_list(){
+        $userId=$_REQUEST['user_id'];
+
+
+        if($userId!=''){
+          $user_fields = user_load($userId);//echo "<pre>";print_r($user_fields);die;
+          $first_name_staff = $user_fields->name;
+          $email = $user_fields->mail;
+          $pid=db_query("SELECT pid FROM profile WHERE uid =" . $userId)->fetchField();
+          $last_name_staff = db_query("SELECT field_last_name_value FROM field_data_field_last_name WHERE entity_id =" . $pid)->fetchField();
+          $cell_phone = db_query("SELECT field_cell_phone_value FROM field_data_field_cell_phone WHERE entity_id =" . $pid)->fetchField();
+          $org_name = db_query("SELECT field_company_organization_value FROM field_data_field_company_organization WHERE entity_id =" . $pid)->fetchField();
+          $uDetails['first_name']=$first_name_staff;
+          $uDetails['last_name']=$last_name_staff;
+          $uDetails['email']=$email;
+        }
+echo $first_name_staff.",".$last_name_staff.",".$email.",".$cell_phone.",".$org_name;
+exit();
+}
+
+/**
+ * [estar get all contacts list]
+ * @param  [type] $node [description]s
+ * @return [type]       [description]
+ */
+function invite_volunteer_form(){
+	//drupal_set_title("");
+  global $user;
+  $form=array();
+	$all_user_lists = entity_load('user');
+
+$all_user_details = json_decode(json_encode($all_user_lists), true);
+
+   //echo "<pre>";print_r($all_user_details);die;
+
+   //echo "<pre>";print_r($personConduct_id_arr);die;
+   $form['person_Conducting_starts'] = array(
+       '#markup' => "<div id='person_Conducting_changehidden'>"
+   );
+   $form['personConducting'] = array(
+       '#markup' => '<div class="responsive_table"> <label style="color:green;">Volunteer to whom the CIA will be sent (I*** we would like this to use Volunteer but also the soon to be created CONTACT user as well) <span class="form-required" title="This field is required.">*</span></label><table id="personConductingTab" class="sticky-enabled table-select-processed">
+ <thead><tr><th class="select-all"></th><th>First Name</th><th>Last Name</th><th>Email</th><th>Cell phone</th><th>Company Organization</th></tr></thead>
+ <tbody>'
+   );
+   $usersRow = '';
+   foreach ($all_user_details as $usersList)
+   { //echo "<pre>";print_r($all_user_details);die;
+       if ($usersList['uid'] != "0" && (isset($usersList['roles'][7]) && $usersList['roles'][7] == "Staff User") || (isset($usersList['roles'][5]) && $usersList['roles'][5] == "Admin") || (isset($usersList['roles'][6]) && $usersList['roles'][6] == "Manager"))
+       {
+          $pid=db_query("SELECT pid FROM profile WHERE uid =" . $usersList['uid'])->fetchField();
+           $last_name_staff = db_query("SELECT field_last_name_value FROM field_data_field_last_name WHERE entity_id =" . $pid)->fetchField();
+           $cell_phone = db_query("SELECT field_cell_phone_value FROM field_data_field_cell_phone WHERE entity_id =" . $pid)->fetchField();
+           $org_name = db_query("SELECT field_company_organization_value FROM field_data_field_company_organization WHERE entity_id =" . $pid)->fetchField();
+
+           $usersRow .= '<tr class="odd"><td><div class="form-item form-type-checkbox form-item-person-conducting-0">
+               <label><input id="mouManagerId" name="person_conducting[]" value="' . $usersList['uid'] . '" class="form-checkbox required mouManagerClass" type="radio"></label>
+
+             </td><td>' . (($usersList['name'] != "") ? $usersList['name'] : "") . '</td><td>' . (($last_name_staff != "") ? $last_name_staff : "") . '</td>
+             <td>' . (($usersList['mail'] != "") ? $usersList['mail'] : "") . '</td><td>' . (($cell_phone != "") ? $cell_phone : "") . '</td><td>' . (($org_name != "") ? $org_name : "") . '</td></tr>';
+       }
+
+   }
+
+
+   $form['personConductingContent'] = array(
+       '#markup' => $usersRow,
+   );
+
+   $form['personConductingEnd'] = array(
+       '#markup' => '</tbody></table></div>'
+   );
+   $form['person_Conducting_end'] = array(
+       '#markup' => '</div>'
+   );
+
+   $form['first_name'] = array(
+       '#type' => 'textfield',
+       '#title' => t('First Name'),
+       '#attributes' => array('id'=>"first-id"),
+   );
+   $form['last_name'] = array(
+       '#type' => 'textfield',
+       '#title' => t('Last Name'),
+       '#attributes' => array('id'=>"last-id"),
+   );
+   $form['email'] = array(
+       '#type' => 'textfield',
+       '#title' => t('Email'),
+       '#attributes' => array('id'=>"em-id"),
+   );
+   $form['phone'] = array(
+       '#type' => 'textfield',
+       '#title' => t('Phone Number'),
+       '#attributes' => array('id'=>"ph-id"),
+   );
+   $form['position'] = array(
+       '#type' => 'textfield',
+       '#title' => t('Title / Position'),
+   );
+   $form['sector'] = array(
+       '#type' => 'textfield',
+       '#title' => t('Sector'),
+       '#attributes' => array('id'=>"sect-id"),
+   );
+   $form['address_1'] = array(
+       '#type' => 'textfield',
+       '#title' => t('Address 1') ,
+       '#default_value' => $item->address_1,
+       '#attributes' => array('id'=>"add-id"),
+   );
+   $form['web_site_address'] = array(
+       '#type' => 'textfield',
+       '#title' => t('Website Address'),
+   );
+
+   $form['city'] = array(
+       '#type' => 'textfield',
+       '#title' => 'City',
+       '#attributes' => array('id'=>"city-id"),
+       '#default_value' => $item->city,
+   );
+
+   $form['states'] = array(
+       '#prefix' => '<div class="select_section capacity_select_Section">',
+       '#suffix' => '</div>',
+       '#title' => t('State') ,
+       '#type' => 'select',
+       '#attributes' => array('id'=>"state-id"),
+       '#options' => array(
+           '' => "<--Select-->",
+           'Alabama' => "Alabama",
+           'Alaska' => "Alaska",
+           'Arizona' => "Arizona",
+           'Arkansas' => "Arkansas",
+           'California' => "California",
+           'Colorado' => "Colorado",
+           'Connecticut' => "Connecticut",
+           'District of Columbia' => "District of Columbia",
+           'Flocapacity_ida' => "Flocapacity_ida",
+           'Georgia' => "Georgia",
+           'Hawaii' => "Hawaii",
+           'Iowa' => "Iowa",
+           'Kansas' => "Kansas",
+           'Louisiana' => "Louisiana",
+           'Maine' => "Maine",
+           'Massachusetts' => "Massachusetts",
+           'Michigan' => "Michigan",
+           'Minnesota' => "Minnesota",
+           'Mississippi' => "Mississippi",
+           'Missouri' => "Missouri",
+           'Montana' => "Montana",
+           'Nebraska' => "Nebraska",
+           'Nevada' => "Nevada",
+           'New Hampshire' => "New Hampshire",
+           'New Jersey' => "New Jersey",
+           'New Mexico' => "New Mexico",
+           'New York' => "New York",
+           'North Carolina' => "North Carolina",
+           'North Dakota' => "North Dakota",
+           'Ohio' => "Ohio",
+           'Oklahoma' => "Oklahoma",
+           'Oregon' => "Oregon",
+           'Pennsylvania' => "Pennsylvania",
+           'Rhode Island' => "Rhode Island",
+           'South Carolina' => "South Carolina",
+           'South Dakota' => "South Dakota",
+           'Tennessee' => "Tennessee",
+           'Texas' => "Texas",
+           'Utah' => "Utah",
+           'Vermont' => "Vermont",
+           'Virginia' => "Virginia",
+           'Washington' => "Washington",
+           'West Virginia' => "West Virginia",
+           'Wisconsin' => "Wisconsin",
+           'Wyoming' => "Wyoming",
+           'Armed Forces (Americas)' => "Armed Forces (Americas)",
+           'Armed Forces (Europe, Canada, Middle East, Africa)' => "Armed Forces (Europe, Canada, Middle East, Africa)",
+           'Armed Forces (Pacific)' => "Armed Forces (Pacific)",
+           'American Samoa' => "American Samoa",
+           'Federated States of Micronesia' => "Federated States of Micronesia",
+           'Guam' => "Guam",
+           'Marshall Islands' => "Marshall Islands",
+           'Northern Mariana Islands' => "Northern Mariana Islands",
+           'Palau' => "Palau",
+           'Puerto Rico' => "Puerto Rico",
+           'Virgin Islands' => "Virgin Islands"
+       ) ,
+       '#default_value' => $item->states,
+   );
+
+   $form['zip_code'] = array(
+       '#type' => 'textfield',
+       '#title' => t('Zipcode') ,
+       '#element_validate' => array(
+           'element_validate_number'
+       ) ,
+       '#attributes' => array('id'=>"zip-id"),
+       '#maxlength' => 6,
+       '#default_value' => $item->zip_code,
+       '#suffix' => '</table>
+   ', // Don't forget to close the table rows, and finally the table.
+
+   );
+   $form['organization'] = array(
+       '#type' => 'textfield',
+       '#title' => t('Organization'),
+       '#attributes' => array('id'=>"org-id"),
+   );
+   $form['year_joined'] = array(
+       '#type' => 'textfield',
+       '#title' => t('Year First Joined'),
+       '#default_value'=>date("F j, Y")
+   );
+   $form['program'] = array(
+       '#type' => 'textfield',
+       '#title' => t('Program'),
+       '#required'=>true
+   );
+
+
+   $form['type_of_mou'] = array(
+       '#type' => 'radios',
+       '#title' => t('Type of CIA (select one radio button)'),
+       '#options' =>array('New' => t("New User CIA"),'Renewal' => t("Renewal CIA"),'Other' => t("Other CIA")),
+       '#required'=>true
+   );
+   $form['mou_text'] = array(
+       '#type' => 'textarea',
+       '#title' => t('Full Text of COMMUNITY INVOLVEMENT AGREEMENT') ,
+       '#rows' => 15,
+       '#default_value'=>t('<div class="email_content" style="padding:20px; " ><div class="logo_section" style="max-width:300px; text-align:center; " ><img src="http://172.16.1.152:8081/docroot/sites/default/files/e-star-logo.png" width="200" data-max-width="300" style="max-width:200px; width:180px; margin:20px 0px; display:block; "></div>
+	   <p>Thiss agreement between [Grant Award Recipient/Legal Applicant] and [Coalition name] shall be from [Month/Date/Year] until terminated by mutual agreement:</p>
+<h3 style="font-size: 16px; color:#fff; margin-bottom: 5px; position: relative; transition: 0.5s; font-weight: bold; background: #3B9506; padding: 10px; clear: both; margin-bottom:20px;">RESPONSIBILITIES OF THE COALITION:</h3>
+<p style="margin-bottom:5px; line-height:24px;">a. Set policy for and oversee its own programs including goals and objectives in alignment with the DFC Support Program’s Terms and Conditions.</p>
+<p style="margin-bottom:5px; line-height:24px;">b. Participate, advise, and/or direct staff and volunteers, set goals and objectives for contract employees, and negotiate and make recommendations for contracts in collaboration with the grant recipient/legal applicant.</p>
+<p style="margin-bottom:5px; line-height:24px;">c. Create, approve, and partner in the management of the DFC budget in compliance with grant requirements.</p>
+<p style="margin-bottom:5px; line-height:24px;">d. Provide copies of all required documentation to the grant recipient/legal applicant as requested.</p>
+<p style="margin-bottom:5px; line-height:24px;">e. Reimburse grant recipient/legal applicant for any indirect or direct expenses incurred by the coalition with prior approval.</p>
+<p style="margin-bottom:5px; line-height:24px;">f. Be solely responsible for liabilities arising out of its program and its interaction with program participants.</p>
+<p style="margin-bottom:5px; line-height:24px;">g. Other…</p><br><br>
+<h3 style="font-size: 16px; color:#fff; margin-bottom: 5px; position: relative; transition: 0.5s; font-weight: bold; background: #3B9506; padding: 10px; clear: both; margin-bottom:20px;">RESPONSIBILITIES OF THE LEGAL APPLICANT/GRANT RECIPIENT:</h3>
+<p style="margin-bottom:5px; line-height:24px;">a. Provide the coalition staff with office space.</p>
+<p style="margin-bottom:5px; line-height:24px;">b. Compile financial reports on a mutually agreed upon schedule and provide to coalition.</p>
+<p style="margin-bottom:5px; line-height:24px;">c. Provide accounting services to prepare and distribute payroll, pay invoices, prepare and submit the appropriate forms for employment, wages and payroll taxes on behalf of the coalition.</p>
+<p style="margin-bottom:5px; line-height:24px;">d. Negotiate and/or bid and approve contracts in collaboration with the coalition.</p>
+<p style="margin-bottom:5px; line-height:24px;">e. Maintain all records pertaining to costs and expenses to reflect costs of labor, materials, equipment, supplies, services, and other costs and expenses when reimbursement is claimed or payment is made and share such information with the coalition.</p>
+<p style="margin-bottom:5px; line-height:24px;">f. Obtain Workmans Compensation Insurance and liability coverage for the coalitions
+employees.</p>
+<p style="margin-bottom:5px; line-height:24px;">g. Other…</p></div>						
+
+')
+   );
+
+   $form['sample_mous'] = array(
+       '#markup' => '<div class="mous_sample_area"><h2>Sample CIAs</h2> <a id="pMOU" href="#">Police Department CIA</a> <a id="npMOU" href="#">Non-profit CIA</a> <a id="parMOU" href="#">Parent CIA</a>
+       <a id="tMOU" href="#">Teacher CIA</a> <a id="cMOU" href="#">Coach CIA</a> <a id="parMOU" href="#">Doctor CIA</a>
+       <a id="phyMOU" href="#">Phychiatrist CIA</a> <a id="empMOU" href="#">City Employee CIA</a></div>',
+   );
+   $form['sender_email'] = array(
+       '#type' => 'textfield',
+       '#title' => t('From what email address'),
+       '#default_value' => (isset($user->mail) && $user->mail!="")?$user->mail:"",
+       '#attributes'=>array('readonly'=>"readonly")
+   );
+   $form['hid_username'] = array(
+       '#type' => 'hidden',
+       '#default_value' => (isset($user->name) && $user->name!="")?$user->name:"",
+       '#attributes'=>array('id'=>"hidUserName")
+   );
+   $form['mail_subject'] = array(
+       '#type' => 'textfield',
+       '#title' => t('Subject'),
+   );
+   $form['mail_body'] = array(
+       '#type' => 'textarea',
+       '#title' => t('Body of Message'),
+   );
+   $form['signature'] = array(
+       '#type' => 'radios',
+       '#title' => t('Signature') ,
+       '#options' => array(
+           '1' => "I hereby certify that as the undersigned i have read and agree with this CIA"
+       ) ,
+       '#required' => true,
+   );
+
+   $form['next_btn_div_start2'] = array(
+       '#markup' => "<div class='assessment-nxt-btn implement-btn '>"
+   );
+   $form['submit'] = array(
+       '#type' => 'submit',
+       '#value' => t('Save') ,
+   );
+   $form['next_btn_div_end2'] = array(
+       '#markup' => "</div>"
+   );
+
+   $form['submit-btn-separator'] = array(
+       '#markup' => '<br><br>'
+   );
+
+   return $form;
+
+}
+
+function mou_manager_view_page($mouId){
+  global $user;
+  $currentSignedDate = date("F j, Y");
+$url = (isset($_SERVER['HTTPS']) ? "https" : "http") . "://$_SERVER[HTTP_HOST]$_SERVER[REQUEST_URI]";
+   $mouId= basename($url);
+  if(isset($mouId) && $mouId!=""){
+      $mou_details = db_query("SELECT * FROM {mou_manager_details} WHERE inviter_id = " . $mouId." ORDER BY `mou_manager_id` DESC")->fetchAll();
+  }
+    //echo "<pre>";print_r($mou_details);die;
+
+if(isset($mou_details[0]->updated_at) && $mou_details[0]->updated_at==""){
+
+  $form['first_name'] = array(
+      '#type' => 'textfield',
+      '#title' => t('First Name'),
+      '#attributes' => array('id'=>"first-id"),
+      '#default_value'=> $mou_details[0]->first_name
+  );
+  $form['last_name'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Last Name'),
+      '#attributes' => array('id'=>"last-id"),
+      '#default_value'=> $mou_details[0]->last_name
+  );
+  $form['email'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Email'),
+      '#attributes' => array('id'=>"em-id"),
+      '#default_value'=> $mou_details[0]->email
+  );
+  $form['phone'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Phone Number'),
+      '#attributes' => array('id'=>"ph-id"),
+      '#default_value'=> $mou_details[0]->phone
+  );
+  $form['position'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Title / Position'),
+      '#default_value'=> $mou_details[0]->position
+  );
+  $form['sector'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Sector'),
+      '#attributes' => array('id'=>"sect-id"),
+        '#default_value'=> $mou_details[0]->sector
+  );
+  $form['address_1'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Address 1') ,
+      '#default_value' => $item->address_1,
+      '#attributes' => array('id'=>"add-id"),
+        '#default_value'=> $mou_details[0]->address_1
+  );
+  $form['web_site_address'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Website Address'),
+        '#default_value'=> $mou_details[0]->website_address
+  );
+
+  $form['city'] = array(
+      '#type' => 'textfield',
+      '#title' => 'City',
+      '#attributes' => array('id'=>"city-id"),
+        '#default_value'=> $mou_details[0]->city
+  );
+
+  $form['states'] = array(
+      '#prefix' => '<div class="select_section capacity_select_Section">',
+      '#suffix' => '</div>',
+      '#title' => t('State') ,
+      '#type' => 'select',
+      '#attributes' => array('id'=>"state-id"),
+      '#options' => array(
+          '' => "<--Select-->",
+          'Alabama' => "Alabama",
+          'Alaska' => "Alaska",
+          'Arizona' => "Arizona",
+          'Arkansas' => "Arkansas",
+          'California' => "California",
+          'Colorado' => "Colorado",
+          'Connecticut' => "Connecticut",
+          'District of Columbia' => "District of Columbia",
+          'Flocapacity_ida' => "Flocapacity_ida",
+          'Georgia' => "Georgia",
+          'Hawaii' => "Hawaii",
+          'Iowa' => "Iowa",
+          'Kansas' => "Kansas",
+          'Louisiana' => "Louisiana",
+          'Maine' => "Maine",
+          'Massachusetts' => "Massachusetts",
+          'Michigan' => "Michigan",
+          'Minnesota' => "Minnesota",
+          'Mississippi' => "Mississippi",
+          'Missouri' => "Missouri",
+          'Montana' => "Montana",
+          'Nebraska' => "Nebraska",
+          'Nevada' => "Nevada",
+          'New Hampshire' => "New Hampshire",
+          'New Jersey' => "New Jersey",
+          'New Mexico' => "New Mexico",
+          'New York' => "New York",
+          'North Carolina' => "North Carolina",
+          'North Dakota' => "North Dakota",
+          'Ohio' => "Ohio",
+          'Oklahoma' => "Oklahoma",
+          'Oregon' => "Oregon",
+          'Pennsylvania' => "Pennsylvania",
+          'Rhode Island' => "Rhode Island",
+          'South Carolina' => "South Carolina",
+          'South Dakota' => "South Dakota",
+          'Tennessee' => "Tennessee",
+          'Texas' => "Texas",
+          'Utah' => "Utah",
+          'Vermont' => "Vermont",
+          'Virginia' => "Virginia",
+          'Washington' => "Washington",
+          'West Virginia' => "West Virginia",
+          'Wisconsin' => "Wisconsin",
+          'Wyoming' => "Wyoming",
+          'Armed Forces (Americas)' => "Armed Forces (Americas)",
+          'Armed Forces (Europe, Canada, Middle East, Africa)' => "Armed Forces (Europe, Canada, Middle East, Africa)",
+          'Armed Forces (Pacific)' => "Armed Forces (Pacific)",
+          'American Samoa' => "American Samoa",
+          'Federated States of Micronesia' => "Federated States of Micronesia",
+          'Guam' => "Guam",
+          'Marshall Islands' => "Marshall Islands",
+          'Northern Mariana Islands' => "Northern Mariana Islands",
+          'Palau' => "Palau",
+          'Puerto Rico' => "Puerto Rico",
+          'Virgin Islands' => "Virgin Islands"
+      ) ,
+      '#default_value'=> $mou_details[0]->states
+  );
+
+  $form['zip_code'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Zipcode') ,
+      '#element_validate' => array(
+          'element_validate_number'
+      ) ,
+      '#attributes' => array('id'=>"zip-id"),
+      '#maxlength' => 6,
+        '#default_value'=> $mou_details[0]->zip_code,
+      '#suffix' => '</table>
+  ', // Don't forget to close the table rows, and finally the table.
+
+  );
+  $form['organization'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Organization'),
+      '#attributes' => array('id'=>"org-id"),
+        '#default_value'=> $mou_details[0]->organization
+  );
+  $form['year_joined'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Year First Joined'),
+      '#attributes'=>array('readonly'=>"readonly"),
+      '#default_value'=> $mou_details[0]->year_joined
+  );
+  $form['program'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Program'),
+        '#default_value'=> $mou_details[0]->program
+  );
+  $form['type_of_mou'] = array(
+      '#type' => 'radios',
+      '#title' => t('Type of CIA (select one radio button)'),
+      '#default_value'=> $mou_details[0]->type_of_mou,
+      '#options' =>array('New' => t("New User CIA"),'Renewal' => t("Renewal CIA"),'Other' => t("Other CIA")),
+      '#disabled'=>true,
+      '#required'=>true
+  );
+  if(isset($mou_details[0]->user_id) && $mou_details[0]->user_id!=""){
+    $user=user_load($mou_details[0]->user_id);
+    $username=$user->name;
+  }
+
+  $form['mou_text'] = array(
+      '#type' => 'textarea',
+      '#title' => t('Full Text of COMMUNITY INVOLVEMENT AGREEMENT') ,
+      '#rows' => 15,
+      '#default_value'=>  t('<div class="" style=" background: #e2ffd1; padding:20px;"><div class="" style="background:#fff; padding:10px;"><p style=" padding-left:30px;">Dear <b>'.$mou_details[0]->first_name.'</b>, Thank you for signing the <b>'.$mou_details[0]->program.'</b></p><p style=" padding-left:30px;"> Your assistance is vital to our success. '.$mou_details[0]->mou_text.' <p style="padding-left:30px; margin-bottom:0px;">Signed By </p><p style="padding-left:30px; margin-bottom:0px;">'.$username.' - '.$mou_details[0]->created_at.'</p>'.$mou_details[0]->first_name.' '.$mou_details[0]->last_name.' - '.$currentSignedDate.'</p></div></div>')
+  );
+
+  $form['mou_id'] = array(
+      '#type' => 'hidden',
+      '#default_value' => $mou_details[0]->mou_manager_id,
+      '#attributes'=>array('id'=>"hidMOUId")
+  );
+  $form['hid_username'] = array(
+      '#type' => 'hidden',
+      '#default_value' => (isset($user->name) && $user->name!="")?$user->name:"",
+      '#attributes'=>array('id'=>"hidUserName")
+  );
+
+if(isset($mou_details[0]->user_id) && $mou_details[0]->user_id!=""){
+  $user=user_load($mou_details[0]->user_id);
+  $username=$user->name;
+}
+
+  $form['mou-aggrement-html']=array('#markup'=>"
+          <p>This CIA agreement has been signed by following representative:</p> <h3>".$username." - ".$mou_details[0]->created_at."</h3>");
+
+  $form['signature'] = array(
+      '#type' => 'radios',
+      '#title' => t('Signature') ,
+      '#options' => array(
+          '1' => "I hereby certify that as the undersigned i have read and agree with this MOU"
+      ) ,
+      '#required' => true,
+  );
+
+  $form['next_btn_div_start2'] = array(
+      '#markup' => "<div class='assessment-nxt-btn implement-btn '>"
+  );
+  $form['submit'] = array(
+      '#type' => 'submit',
+      '#value' => t('Save') ,
+  );
+  $form['next_btn_div_end2'] = array(
+      '#markup' => "</div>"
+  );
+
+  $form['submit-btn-separator'] = array(
+      '#markup' => ''
+  );
+
+}else{
+  $form['invalid-mail-verification'] = array(
+      '#markup' => "<h3><div class='mail'>You have already signed this program. Thank you.</div></h3>"
+  );
+}
+
+  return $form;
+}
+
+function mou_manager_list_view_page($mouId){
+$url = (isset($_SERVER['HTTPS']) ? "https" : "http") . "://$_SERVER[HTTP_HOST]$_SERVER[REQUEST_URI]";
+   $mouId= basename($url);
+  if(isset($mouId) && $mouId!=""){
+      $mou_details = db_query("SELECT * FROM {mou_manager_details} WHERE mou_manager_id = " . $mouId)->fetchAll();
+  }
+    //echo "<pre>";print_r($mou_details);die;
+
+  $form['mou_text'] = array(
+      '#markup' => '<h2 class="email_heading" style="font-size: 16px; color:#fff; margin-bottom: 5px; position: relative; transition: 0.5s; font-weight: bold; background: #3B9506; padding: 10px; clear: both; margin-bottom:20px;">COMMUNITY INVOLVEMENT AGREEMENT</h2>
+                   <div class="email_template" style="display: block; float: none; margin-bottom: 20px; background: #fff; padding: 0px; border: 5px solid #3b9506;" >'.$mou_details[0]->mou_text.'</div>',
+  );
+
+
+  $form['hid_username'] = array(
+      '#type' => 'hidden',
+      '#default_value' => (isset($user->name) && $user->name!="")?$user->name:"",
+      '#attributes'=>array('id'=>"hidUserName")
+  );
+
+if(isset($mou_details[0]->user_id) && $mou_details[0]->user_id!=""){
+  $user=user_load($mou_details[0]->user_id);
+  $username=$user->name;
+}
+
+	$created_by_img = file_create_url(path_to_theme().'/images/businessman.png');
+  $form['mou-aggrement-html']=array('#markup'=>"
+          <p>This CIA agreement has been signed by following representative: </p> 
+         
+			<div class='user_create_section'>
+				<div class='user-det create_user_section'>
+					<div class='image_section'><img src=".$created_by_img." class='white_img'></div>
+					<div class='content_section'><h5>".$username." </h5><p>".$mou_details[0]->created_at."</p></div>
+				</div>
+				<div class='user-date-det create_user_section'>
+					<div class='image_section'><img src=".$created_by_img." class='white_img'></div>
+					<div class='content_section'><h5>".$mou_details[0]->first_name." ".$mou_details[0]->last_name." </h5><p> ".$mou_details[0]->updated_at."</p></div>
+				</div>
+			</div>
+		  
+		  ");
+			
+			
+		
+  return $form;
+}
+
+function mou_manager_view_page_submit($form,&$form_state){
+
+  //$to      = 'prabakaran@g2tsolutions.com';
+  $to      = $form_state['input']['email'];
+  $subject = $form_state['input']['program'];
+  $message = $form_state['input']['mou_text'];
+  $headers = 'From: g2tdev@gmail.com' . "\r\n" .
+      'Reply-To: g2tdev@gmail.com' . "\r\n" .
+      'X-Mailer: PHP/' . phpversion()."\r\n" .'MIME-Version: 1.0'."\r\n" .'Content-type: text/html; charset=iso-8859-1';
+
+  if (mail($to, $subject, $message, $headers))
+  {
+      drupal_set_message('You have successfully signed the CIA, Thank you');
+  }
+  else
+  {
+      drupal_set_message('Mail sending failed. Try after sometimes. ');
+  }
+  $mouId=$form_state['input']['mou_id'];
+  $mou_date_update = date("F j, Y");
+  $mou_update_id = db_update('mou_manager_details')->fields(array(
+    'first_name' => $form_state['input']['first_name'],
+    'last_name' => $form_state['input']['last_name'],
+    'email' => $form_state['input']['email'],
+    'phone' => $form_state['input']['phone'],
+    'position' => $form_state['input']['position'],
+    'sector' => $form_state['input']['sector'],
+    'website_address' => $form_state['input']['web_site_address'],
+      'address_1' => $form_state['input']['address_1'],
+      'city' => $form_state['input']['city'],
+      'states' => $form_state['input']['states'],
+      'zip_code' => $form_state['input']['zip_code'],
+      'organization' => $form_state['input']['organization'],
+      'year_joined' => $form_state['input']['year_joined'],
+      'program' => $form_state['input']['program'],
+      'mou_text' => $form_state['input']['mou_text'],
+      'updated_at' => $mou_date_update,
+  ))->condition('mou_manager_id', $mouId)->execute();
+  if($mou_update_id!=''){
+    drupal_goto('/user');    //$form_state['redirect'] = 'mou_manager/list';
+    drupal_set_message("CIA Invitation sent successfully");
+  }
+
+}
+
+function invite_volunteer_form_submit($form, &$form_state){ //echo "<pre>";print_r($form_state);die;
+global $user;
+  $valid_email = 'prabakaran@g2tsolutions.com';
+  $from = $form_state['input']['sender_email'];
+
+  //$to      = 'prabakaran@g2tsolutions.com';
+  $to      = $form_state['input']['email'];
+  $subject = $form_state['input']['mail_subject'];
+  $message = $form_state['input']['mail_body'];
+  $headers = 'From: g2tdev@gmail.com' . "\r\n" .
+      'Reply-To: g2tdev@gmail.com' . "\r\n" .
+      'X-Mailer: PHP/' . phpversion()."\r\n" .'MIME-Version: 1.0'."\r\n" .'Content-type: text/html; charset=iso-8859-1';
+
+  if (mail($to, $subject, $message, $headers))
+  {
+      drupal_set_message('An Invitation has been sent to ' . $to);
+  }
+  else
+  {
+      drupal_set_message('Mail sending failed. Try after sometimes. ');
+  }
+
+  $mou_date_creation = date("F j, Y");
+  $mou_id = db_insert('mou_manager_details')->fields(array(
+    'inviter_id' => $form_state['input']['person_conducting'][0],
+    'first_name' => $form_state['input']['first_name'],
+    'last_name' => $form_state['input']['last_name'],
+    'email' => $form_state['input']['email'],
+    'phone' => $form_state['input']['phone'],
+    'position' => $form_state['input']['position'],
+    'sector' => $form_state['input']['sector'],
+    'website_address' => $form_state['input']['web_site_address'],
+      'address_1' => $form_state['input']['address_1'],
+      'city' => $form_state['input']['city'],
+      'states' => $form_state['input']['states'],
+      'zip_code' => $form_state['input']['zip_code'],
+      'organization' => $form_state['input']['organization'],
+      'year_joined' => $form_state['input']['year_joined'],
+      'program' => $form_state['input']['program'],
+      'type_of_mou' => $form_state['input']['type_of_mou'],
+      'mou_text' => $form_state['input']['mou_text'],
+      'sender_email' => $form_state['input']['sender_email'],
+      'subject' => $form_state['input']['mail_subject'],
+      'mail_body' => $form_state['input']['mail_body'],
+      'user_id' => $user->uid,
+      'signature' => ($form_state['input']['signature'] == "1") ? $form_state['values']['signature'] : "0",
+      'created_at' => $mou_date_creation,
+      'updated_at' => '',
+  ))->execute();
+  if($mou_id!=''){
+    $form_state['redirect'] = 'mou_manager/list';
+    drupal_set_message("Invitation sent successfully");
+  }
+}
+
+function mou_manager_list_page(){
+
+$mou_manager_lists =db_query("SELECT * from {mou_manager_details}")->fetchAll();
+
+   //echo "<pre>";print_r($mou_manager_lists);die;
+
+   //echo "<pre>";print_r($personConduct_id_arr);die;
+if(isset($mou_manager_lists) && count($mou_manager_lists)>0){
+
+   $form['person_Conducting_starts'] = array(
+       '#markup' => "<div id='person_Conducting_changehidden'>"
+   );
+   $form['personConducting'] = array(
+       '#markup' => '<div class="responsive_table"></span></label><table id="personConductingTab" class="sticky-enabled table-select-processed">
+ <thead><tr>
+ <th>First Name</th>
+ <th>Last Name</th>
+ <th>Email</th>
+ <th>Sector</th>
+ <th>Counter Signed Date</th>
+ <th>Date Exp</th>
+ <th>Joined Date</th>
+ <th>Program</th>
+ <th>Type</th>
+ <th>Tools</th>
+ </tr></thead>
+ <tbody>'
+   );
+   $usersRow = '';
+   foreach ($mou_manager_lists as $mouUser)
+   { //echo "<pre>";print_r($mouUser);die;
+         if($mouUser->updated_at!=""){
+          $expDate=date("F j, Y",strtotime('+1 years',strtotime($mouUser->updated_at)));
+        }
+           $usersRow .= '<tr class="odd">
+             <td>' . (($mouUser->first_name != "") ? $mouUser->first_name : "") . '</td>
+             <td>' . (($mouUser->last_name != "") ? $mouUser->last_name : "") . '</td>
+             <td>' . (($mouUser->email != "") ? $mouUser->email : "") . '</td>
+             <td>' . (($mouUser->sector != "") ? $mouUser->sector : "") . '</td>
+             <td>' . (($mouUser->updated_at != "") ? $mouUser->updated_at : "") . '</td>
+             <td>' . (($expDate != "") ? $expDate : "") . '</td>
+             <td>' . (($mouUser->year_joined != "") ? $mouUser->year_joined : "") . '</td>
+             <td>' . (($mouUser->program != "") ? $mouUser->program : "") . '</td>
+             <td>' . (($mouUser->type_of_mou != "") ? $mouUser->type_of_mou : "") . '</td>
+             <td><a href="renew/'.$mouUser->inviter_id.'">Renew</a> | <a href="list_view/'.$mouUser->mou_manager_id.'">View</a></td>
+             </tr>';
+
+   }
+
+
+   $form['personConductingContent'] = array(
+       '#markup' => $usersRow,
+   );
+
+   $form['personConductingEnd'] = array(
+       '#markup' => '</tbody></table></div>'
+   );
+   $form['person_Conducting_end'] = array(
+       '#markup' => '</div><br><br>'
+   );
+ }else{
+   $form['personConducting'] = array(
+       '#markup' => '<div class="responsive_table"></span></label><table id="personConductingTab" class="sticky-enabled table-select-processed">
+ <thead><tr>
+ <th>First Name</th>
+ <th>Last Name</th>
+ <th>Email</th>
+ <th>Counter Signed Date</th>
+ <th>Date Exp</th>
+ <th>Joined Date</th>
+ <th>Program</th>
+ <th>Type</th>
+ <th>Tools</th>
+ </tr></thead>
+ <tbody>'
+   );
+
+       $form['personConductingEnd1'] = array(
+           '#markup' => '<tr><td colspan="10">CIA manager list is empty.</td></tr>'
+       );
+       $form['personConductingEnd'] = array(
+           '#markup' => '</tbody></table></div>'
+       );
+
+ }
+
+   return $form;
+}
+
+function mou_manager_renew_page($mouId){
+  global $user;
+$url = (isset($_SERVER['HTTPS']) ? "https" : "http") . "://$_SERVER[HTTP_HOST]$_SERVER[REQUEST_URI]";
+   $mouId= basename($url);
+  if(isset($mouId) && $mouId!=""){
+      $mou_details = db_query("SELECT * FROM {mou_manager_details} WHERE inviter_id = " . $mouId." ORDER BY `mou_manager_id` DESC")->fetchAll();
+  }
+    //echo "<pre>";print_r($mou_details);die;
+
+  $form['first_name'] = array(
+      '#type' => 'textfield',
+      '#title' => t('First Name'),
+      '#attributes' => array('id'=>"first-id",'readonly'=>"readonly"),
+      '#default_value'=> $mou_details[0]->first_name
+  );
+  $form['last_name'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Last Name'),
+      '#attributes' => array('id'=>"last-id",'readonly'=>"readonly"),
+      '#default_value'=> $mou_details[0]->last_name
+  );
+  $form['email'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Email'),
+      '#attributes' => array('id'=>"em-id",'readonly'=>"readonly"),
+      '#default_value'=> $mou_details[0]->email
+  );
+  $form['phone'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Phone Number'),
+      '#attributes' => array('id'=>"ph-id",'readonly'=>"readonly"),
+      '#default_value'=> $mou_details[0]->phone
+  );
+  $form['position'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Title / Position'),
+      '#default_value'=> $mou_details[0]->position
+  );
+  $form['sector'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Sector'),
+      '#attributes' => array('id'=>"sect-id"),
+        '#default_value'=> $mou_details[0]->sector
+  );
+  $form['address_1'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Address 1') ,
+      '#default_value' => $item->address_1,
+      '#attributes' => array('id'=>"add-id"),
+        '#default_value'=> $mou_details[0]->address_1
+  );
+  $form['web_site_address'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Website Address'),
+        '#default_value'=> $mou_details[0]->website_address
+  );
+
+  $form['city'] = array(
+      '#type' => 'textfield',
+      '#title' => 'City',
+      '#attributes' => array('id'=>"city-id"),
+        '#default_value'=> $mou_details[0]->city
+  );
+
+  $form['states'] = array(
+      '#prefix' => '<div class="select_section capacity_select_Section">',
+      '#suffix' => '</div>',
+      '#title' => t('State') ,
+      '#type' => 'select',
+      '#attributes' => array('id'=>"state-id"),
+      '#options' => array(
+          '' => "<--Select-->",
+          'Alabama' => "Alabama",
+          'Alaska' => "Alaska",
+          'Arizona' => "Arizona",
+          'Arkansas' => "Arkansas",
+          'California' => "California",
+          'Colorado' => "Colorado",
+          'Connecticut' => "Connecticut",
+          'District of Columbia' => "District of Columbia",
+          'Flocapacity_ida' => "Flocapacity_ida",
+          'Georgia' => "Georgia",
+          'Hawaii' => "Hawaii",
+          'Iowa' => "Iowa",
+          'Kansas' => "Kansas",
+          'Louisiana' => "Louisiana",
+          'Maine' => "Maine",
+          'Massachusetts' => "Massachusetts",
+          'Michigan' => "Michigan",
+          'Minnesota' => "Minnesota",
+          'Mississippi' => "Mississippi",
+          'Missouri' => "Missouri",
+          'Montana' => "Montana",
+          'Nebraska' => "Nebraska",
+          'Nevada' => "Nevada",
+          'New Hampshire' => "New Hampshire",
+          'New Jersey' => "New Jersey",
+          'New Mexico' => "New Mexico",
+          'New York' => "New York",
+          'North Carolina' => "North Carolina",
+          'North Dakota' => "North Dakota",
+          'Ohio' => "Ohio",
+          'Oklahoma' => "Oklahoma",
+          'Oregon' => "Oregon",
+          'Pennsylvania' => "Pennsylvania",
+          'Rhode Island' => "Rhode Island",
+          'South Carolina' => "South Carolina",
+          'South Dakota' => "South Dakota",
+          'Tennessee' => "Tennessee",
+          'Texas' => "Texas",
+          'Utah' => "Utah",
+          'Vermont' => "Vermont",
+          'Virginia' => "Virginia",
+          'Washington' => "Washington",
+          'West Virginia' => "West Virginia",
+          'Wisconsin' => "Wisconsin",
+          'Wyoming' => "Wyoming",
+          'Armed Forces (Americas)' => "Armed Forces (Americas)",
+          'Armed Forces (Europe, Canada, Middle East, Africa)' => "Armed Forces (Europe, Canada, Middle East, Africa)",
+          'Armed Forces (Pacific)' => "Armed Forces (Pacific)",
+          'American Samoa' => "American Samoa",
+          'Federated States of Micronesia' => "Federated States of Micronesia",
+          'Guam' => "Guam",
+          'Marshall Islands' => "Marshall Islands",
+          'Northern Mariana Islands' => "Northern Mariana Islands",
+          'Palau' => "Palau",
+          'Puerto Rico' => "Puerto Rico",
+          'Virgin Islands' => "Virgin Islands"
+      ) ,
+      '#default_value'=> $mou_details[0]->states
+  );
+
+  $form['zip_code'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Zipcode') ,
+      '#element_validate' => array(
+          'element_validate_number'
+      ) ,
+      '#attributes' => array('id'=>"zip-id"),
+      '#maxlength' => 6,
+        '#default_value'=> $mou_details[0]->zip_code,
+      '#suffix' => '</table>
+  ', // Don't forget to close the table rows, and finally the table.
+
+  );
+  $form['organization'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Organization'),
+      '#attributes' => array('id'=>"org-id"),
+        '#default_value'=> $mou_details[0]->organization
+  );
+  $form['year_joined'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Year First Joined'),
+        '#default_value'=> $mou_details[0]->year_joined
+  );
+  $form['program'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Program'),
+        '#default_value'=> $mou_details[0]->program
+  );
+  $form['type_of_mou'] = array(
+      '#type' => 'radios',
+      '#title' => t('Type of CIA (select one radio button)'),
+      '#options' =>array('New' => t("New User MOU"),'Renewal' => t("Renewal MOU"),'Other' => t("Other MOU")),
+      '#required'=>true,
+      '#default_value'=>$mou_details[0]->type_of_mou
+  );
+  if(isset($mou_details[0]->user_id) && $mou_details[0]->user_id!=""){
+    $user=user_load($mou_details[0]->user_id);
+    $username=$user->name;
+  }
+
+  $form['mou_text'] = array(
+      '#type' => 'textarea',
+      '#title' => t('Full Text of COMMUNITY INVOLVEMENT AGREEMENT') ,
+      '#rows' => 15,
+      '#default_value'=>  t('<div class="" style=" background: #e2ffd1; padding:20px;"><div class="" style="background:#fff; padding:10px;"><p style=" padding-left:30px;">Dear <b>'.$mou_details[0]->first_name.'</b>, Thank you for signing the <b>'.$mou_details[0]->program.'</b></p><p style=" padding-left:30px;"> Your assistance is vital to our success. '.$mou_details[0]->mou_text.' <p>Signed By </p><p>'.$username.' - '.$mou_details[0]->created_at.'</p>'.$mou_details[0]->first_name.' '.$mou_details[0]->last_name.' - '.$mou_details[0]->updated_at.'</p></div></div>')
+  );
+
+  $form['mou_id'] = array(
+      '#type' => 'hidden',
+      '#default_value' => $mou_details[0]->mou_manager_id,
+      '#attributes'=>array('id'=>"hidMOUId")
+  );
+  $form['hid_username'] = array(
+      '#type' => 'hidden',
+      '#default_value' => (isset($user->name) && $user->name!="")?$user->name:"",
+      '#attributes'=>array('id'=>"hidUserName")
+  );
+
+if(isset($mou_details[0]->user_id) && $mou_details[0]->user_id!=""){
+  $user=user_load($mou_details[0]->user_id);
+  $username=$user->name;
+}
+
+  $form['mou-aggrement-html']=array('#markup'=>"
+          <p>This CIA agreement has been signed by following representative:</p> <h3>".$username." - ".$mou_details[0]->created_at."</h3>");
+
+  $form['signature'] = array(
+      '#type' => 'radios',
+      '#title' => t('Signature') ,
+      '#options' => array(
+          '1' => "I hereby certify that as the undersigned i have read and agree with this MOU"
+      ) ,
+      '#required' => true,
+  );
+
+  $form['next_btn_div_start2'] = array(
+      '#markup' => "<div class='assessment-nxt-btn implement-btn '>"
+  );
+  $form['submit'] = array(
+      '#type' => 'submit',
+      '#value' => t('Save') ,
+  );
+  $form['next_btn_div_end2'] = array(
+      '#markup' => "</div>"
+  );
+
+  $form['submit-btn-separator'] = array(
+      '#markup' => ''
+  );
+
+  return $form;
+}
+function mou_manager_renew_page_submit($form,&$form_state){
+  $mouId=$form_state['input']['mou_id'];
+  $mou_date_update = date("F j, Y");
+  $mou_update_id = db_update('mou_manager_details')->fields(array(
+    'first_name' => $form_state['input']['first_name'],
+    'last_name' => $form_state['input']['last_name'],
+    'email' => $form_state['input']['email'],
+    'phone' => $form_state['input']['phone'],
+    'position' => $form_state['input']['position'],
+    'sector' => $form_state['input']['sector'],
+    'website_address' => $form_state['input']['web_site_address'],
+      'address_1' => $form_state['input']['address_1'],
+      'city' => $form_state['input']['city'],
+      'states' => $form_state['input']['states'],
+      'zip_code' => $form_state['input']['zip_code'],
+      'organization' => $form_state['input']['organization'],
+      'year_joined' => $form_state['input']['year_joined'],
+      'program' => $form_state['input']['program'],
+      'type_of_mou' => $form_state['input']['type_of_mou'],
+      'mou_text' => $form_state['input']['mou_text'],
+      'updated_at' => $mou_date_update,
+  ))->condition('mou_manager_id', $mouId)->execute();
+  if($mou_update_id!=''){
+    $form_state['redirect'] = 'mou_manager/list';
+    drupal_set_message("CIA renewed successfully");
+  }
+
+}
+?>

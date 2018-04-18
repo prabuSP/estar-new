@@ -1,0 +1,2799 @@
+<?php
+
+require_once DRUPAL_ROOT . '/modules/filter/filter.module';
+
+function implementation_menu()
+{
+  $menu['implementation/add'] = array
+  (
+    'title' => 'implementation',
+    'page callback' => 'implementation_add',
+    'access arguments' => array('add implementation items'),
+    'access callback' => TRUE,
+  );
+  $menu['implementation/edit'] = array
+  (
+    'title' => 'implementation',
+   'page callback' => 'implementation_page',
+    'access callback' => TRUE,
+  );
+
+  $menu['implementation/%implementation/edit'] = array
+  (
+    'title' => 'Edit',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('implementation_edit_item_form', 1),
+    'access arguments' => array('edit implementation items'),
+     'access callback' => TRUE,
+    'type' => MENU_LOCAL_TASK,
+  'weight' => -1,
+  );
+
+  $menu['implementation/list'] = array
+  (
+    'title' => 'implementation',
+    'page callback' => 'implementation_view_list_item_page',
+    'page arguments' => array(1),
+    'access callback' => TRUE,
+  );
+
+  $menu['implementation/%implementation'] = array
+  (
+    'title' => 'View implementation',
+      'page callback' => 'implementation_view_item_page',
+    'page arguments' => array(1),
+    'access callback' => TRUE,
+  );
+
+  $menu['implementation/%implementation/view'] = array
+  (
+    'title' => 'View',
+    'page callback' => 'drupal_get_form',
+    'access callback' => TRUE,
+    'page arguments' => array('implementation_item_view_form', 1),
+    'access arguments' => array('edit implementation items'),
+    'type' => MENU_LOCAL_TASK,
+  'weight' => -2,
+  );
+  return $menu;
+}
+
+function implementation_load($implementation_id)
+{
+  return db_query('SELECT implementation_id,contributing_factor_models,intervention_models,startdatetime,enddatetime,Length_of_services,location,country,address_1,address_2,city,states,zip_code,number_adult_served,number_youth_served,Members_Invloved,personConductingContent,description_of_purpose,description_of_outcome,Donation_select,Monetary_Value,Comment,Attachments_notes,Attachments_fid,is_pending,signature FROM {implementation_details} WHERE implementation_id = :implementation_id', array(':implementation_id' => $implementation_id))->fetchObject();
+}
+
+
+
+function implementation_add()
+{
+  $item = new StdClass;
+  $item->implementation_id = FALSE;
+  $item->personConductingContent = '';
+  $item->startdatetime = '';
+  $item->enddatetime = '';
+  $item->Length_of_services = '';
+  $item->location = '';
+  $item->capacity_address = '';
+  $item->Country = '';
+  $item->address_1 = '';
+  $item->address_2 = '';
+  $item->city = '';
+  $item->states = '';
+  $item->zip_code = '';
+  $item->number_adult_served = '';
+  $item->number_youth_served = '';
+  $item->Members_Invloved = '';
+  $item->description_of_purpose = '';
+  $item->description_of_outcome = '';
+  $item->Donation_select = '';
+  $item->Monetary_Value = '';
+  $item->Comment = '';
+  $item->Attachments_fid = '';
+  $item->Attachments_notes = '';
+  $item->signature = '';
+  return drupal_get_form('implementation_item_form', $item);
+}
+
+function implementation_page()
+{
+  $item = new StdClass;
+  $item->implementation_id = '';
+  $item->personConductingContent = '';
+  $item->startdatetime = '';
+  $item->enddatetime = '';
+  $item->Length_of_services = '';
+  $item->location = '';
+  $item->capacity_address = '';
+  $item->Country = '';
+  $item->address_1 = '';
+  $item->address_2 = '';
+  $item->city = '';
+  $item->states = '';
+  $item->zip_code = '';
+  $item->number_adult_served = '';
+  $item->number_youth_served = '';
+  $item->Members_Invloved = '';
+  $item->description_of_purpose = '';
+  $item->description_of_outcome = '';
+  $item->Donation_select = '';
+  $item->Monetary_Value = '';
+  $item->Comment = '';
+  $item->Attachments_fid = '';
+  $item->Attachments_notes = '';
+  $item->signature = '';
+  return drupal_get_form('implementation_edit_item_form', $item);
+}
+
+function implementation_item_form($form, &$form_state, $item)
+{
+$media_ids = db_query('SELECT entity_id FROM {field_data_field_primary_sector} where field_primary_sector_tid=64')->fetchCol();
+
+if(isset($media_ids) && count($media_ids)>0){
+    foreach($media_ids as $mId){
+      $media_company_name = db_query("SELECT field_company_organization_value FROM field_data_field_company_organization WHERE entity_id =".$mId)->fetchField();
+      if($media_company_name!=''){
+        $media_company_names[$mId]=$media_company_name;
+        }
+    }
+}
+    global $user;
+    $form = array();
+    $form['#tree'] = TRUE;
+    $form['#attributes']['enctype'] = 'multipart/form-data';
+    
+    $base_url=$GLOBALS['base_url'];
+    
+    drupal_set_title("Implementation Add Page");
+
+    $contributing_factor = db_query("SELECT name, name FROM {taxonomy_term_data} WHERE vid = 12")->fetchAllKeyed();
+
+    $interventions = db_query("SELECT name, name FROM {taxonomy_term_data} WHERE vid = 28")->fetchAllKeyed();
+
+      $query = db_select('planning_details','a');
+      $query->fields('a', array('planning_id','title'));
+      $query->orderBy('a.title','ASC');
+      $planning_lists = $query->execute()->fetchAll();
+  $planCount=0;$lmCount=0;
+      foreach($planning_lists as $plankey=>$planVal){ 
+    $plan_id=$planVal->planning_id;
+    $plan_title=$planVal->title;
+    $planning_data_lists = db_query("SELECT * FROM {planning_details} WHERE planning_id = ".$plan_id)->fetchAll();
+    //echo "<pre>";print_r($planning_data_lists);die;
+
+    $chkSerialize = @unserialize($planning_data_lists[0]->contributing_factor);
+    if ($chkSerialize !== false) {
+      $contributingFactor=unserialize($planning_data_lists[0]->contributing_factor);
+        $interventionsCheckedItems=unserialize($planning_data_lists[0]->interventions);
+        $logicModelCount=count($contributingFactor['contributingCollection']);
+        //echo $logicModelCount."<pre>";print_r($contributingFactor);echo "<pre>";print_r($interventionsCheckedItems);die;
+      $conSelectedItems="";$intSelectedItems="";
+    //$contributingItems="";
+     $contributingItems='<div id="firstTable_'.$plankey.'" class="heading_tag">
+    <h3>'.$plan_title.'</h3>
+      <div class="select_btn" style="display:none;">
+        <div class="form-checkboxes">
+          <div class="form-item form-type-checkbox"><label><input id="checkAllLogicModel" type="checkbox" class="form-checkbox" value="" name="contributing_factor" onchange="checkAllRadioFunc(this,'.$planCount.')"> Select all/Select none</label>
+          </div>
+        </div>
+      </div>
+   </div>
+   <div class="logicmodel_inter_con" id="logicmodel_inter_con_'.$planCount.'">';
+     $planCount++;
+      $ico=1;//echo $logicModelCount;die;
+       for($i=0;$i<$logicModelCount;$i++){
+
+    $ichange=$plankey.'_'.$i; 
+        $contributingItems.='<div class="capacity_logic_section"><div id="conFactorTable_'.$i.'" class="conFactorTab">
+                <div class="form-type-checkboxes"><label class="heading_label">Contributing Factor</label>';
+      foreach($contributing_factor as $fKey=>$fVal){ 
+          if($fVal==trim($contributingFactor['contributingCollection']['contribCollection'.$i])){ 
+            $contributingItems.='<div class="form-checkboxes">
+                                <div class="form-item form-type-checkbox"><label><span> '.$fVal.'</span></label></div>
+                     </div>';
+          }
+
+      }
+      $contributingItems.='</div></div>
+      <div id="intervTable_'.$i.'" class="interventions intervTab">
+                            <div class="form-type-checkboxes"><label class="heading_label">Interventions</label>
+                            
+      ';
+
+      foreach($interventions as $cKey=>$cVal){ 
+           if(in_array($cVal,$interventionsCheckedItems['interventionCollection']['internCollection'.$i])){
+            $contributingItems.='<div class="form-checkboxes">
+                                <div class="form-item form-type-checkbox"><label><input type="radio" value="'.$cVal.'" class="form-radio" name="interventions'.$ichange.'[]"><span> '.$cVal.'</span></label></div>
+                     </div>';
+           }
+
+      }
+      
+      $contributingItems.='</div></div></div>';
+      
+      //$contributingItems.='</table>';
+      
+        #--------------------------------------
+        # create a "planning logic model" fieldset
+        #--------------------------------------
+        $form['planningLogicModel'.$plankey] = array(
+        '#type' => 'fieldset',
+        '#title' => t($plan_title),
+        '#collapsible' => TRUE,
+        '#collapsed' => ($plankey=="0")?FALSE:TRUE,
+        '#attributes' => array('class'=>array("planning-fieldset")),
+        );
+         
+      $ico++;
+
+
+}  
+
+  $contributingItems.='</div></table>';
+    $form['planningLogicModel'.$plankey]['contributing_intervention'.$plankey] =array(
+    "#title"  => 'Logic model',
+    "#markup"=> $contributingItems
+    );
+    
+    $form['table_count_id']=array(
+      '#type'=>"hidden",
+      '#value'=>($logicModelCount-1),
+      '#attributes'=>array("id"=>"LogicModelCountId")
+    );
+        
+        
+        //echo "<pre>";print_r($contributingFactor);echo "<pre>";print_r($interventionsCheckedItems);die;
+    } else {//echo $lmCount;die;
+      $ichange=$plankey.'_'.$lmCount;
+      $contributingFactor=$planning_data_lists[0]->contributing_factor;
+      $interventionsCheckedItems=explode(",",$planning_data_lists[0]->interventions);
+      
+      $contributingItems="";
+    foreach($contributing_factor as $fKey=>$fVal){
+        if($contributingFactor==$fVal){
+          $contributingItems.='<div class="form-checkboxes">
+                                <div class="form-item form-type-checkbox"><label><span> '.$fVal.'</span><label></div>
+                   </div>';
+        }
+    }
+
+    $interventionsItems="";
+    foreach($interventions as $cKey=>$cVal){ //echo $cVal."<pre>";print_r($interventionsCheckedItems);die;
+         if(in_array($cVal,$interventionsCheckedItems)){
+          $interventionsItems.='<div class="form-checkboxes">
+                                <div class="form-item form-type-checkbox"><label><input type="radio" value="'.$cVal.'" class="form-radio" name="interventions'.$ichange.'[]"><span> '.$cVal.'</span><label></div>
+                   </div>';
+         }
+    }
+
+        $form['planningLogicModel'.$plankey] = array(
+        '#type' => 'fieldset',
+        '#title' => t($plan_title),
+        '#collapsible' => TRUE,
+        '#collapsed' => ($plankey=="0")?FALSE:TRUE,
+        '#attributes' => array('class'=>array("planning-fieldset")),
+        );
+
+    $form['planningLogicModel'.$plankey]['contributing_intervention'.$plankey] =array(
+    "#title"  => 'Logic model',
+      "#markup"=> '
+    <div id="firstTable'.$plankey.'" class="heading_tag">
+      <h3>'.$plan_title.'</h3>
+      <div class="select_btn" style="display:none;">
+        <div class="form-checkboxes">
+          <div class="form-item form-type-checkbox">
+            <label><input id="checkAllLogicModel" type="checkbox" value="" name="contributing_factor" class="form-checkbox" onchange="checkAllRadioFunc(this,'.$planCount.')"> Select all/Select none</label>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="logicmodel_inter_con" id="logicmodel_inter_con_'.$planCount.'">
+           <div class="capacity_logic_section">
+               <div id="conFactorTab" class="conFactorTab">
+          <div class="form-type-checkboxes">
+            <label class="heading_label">Contributing Factor</label>
+            '.$contributingItems.'
+          </div>
+        </div>
+        <div id="intervTab" class="interventions intervTab">
+          <div class="form-type-checkboxes">
+            <label class="heading_label">Interventions</label>
+            '.$interventionsItems.'
+          </div>
+        </div>
+            </div>
+        </div>
+</table>');
+
+    $form['table_count_id']=array(
+      '#type'=>"hidden",
+      '#value'=>0,
+      '#attributes'=>array("id"=>"LogicModelCountId")
+    );
+    
+    $planCount++;
+    $lmCount++;
+      
+    }
+
+}
+
+
+
+$form['Strategies'] = array(
+  '#prefix'=>'<div class="select_section">',
+  '#suffix'=>'</div>',
+    '#type' => 'select',
+    '#title' => t('Strategies') ,
+    '#required' => TRUE,
+     '#options' => array(
+            'CSAP 6' => "CSAP 6",
+            'CADCA 7' => "CADCA 7"
+        ),
+    '#attributes'=>array("onchange"=>"showStrategiesBySelect(this)")
+  );
+  
+  
+    $Strategies_CSAP_6 = db_query("SELECT name, name FROM {taxonomy_term_data} WHERE vid = 18")->fetchAllKeyed();
+
+  $form['cons_block_start']=array(
+    '#markup'=>"<div id='StrategiesCSAP6' style='display:none;'>"
+  );
+  
+    $form['csap_6'] = array(
+        '#type' => 'radios',
+        '#title' => t('CSAP 6') ,
+        '#options' => $Strategies_CSAP_6,
+        '#attributes'=>array("onclick"=>"showcsap6(this)")
+    );
+
+      $form['end_csap6']=array(
+    '#markup'=>'</div>'
+  );
+  
+
+  $form['Alternative_start']=array(
+    '#markup'=>"<div id='Alternative_start' style='display:none;'>"
+  );
+  
+    $form['Alternative_Activities'] = array(
+        '#type' => 'textfield',
+        '#title' => t('Alternative Activities') ,
+    );
+
+      $form['Alternative_end']=array(
+    '#markup'=>'</div>'
+  );
+            $form['information_start']=array(
+    '#markup'=>"<div id='information_dissemination' style='display:none;'>"
+  ); 
+      $form['information_dissemination'] = array(
+        '#type' => 'select',
+        '#title' => t('Information Dissemination') ,
+        '#options' => array(
+            'None' => "None",
+            'Media' => "Media",
+            'Social Media' => "Social Media",
+            'Presentations' => "Presentations",
+            'Distribution of Materials' => "Distribution of Materials"
+        ) ,
+          '#attributes'=>array("onclick"=>"information(this)"),
+    );
+                     $form['information_end']=array(
+                      '#markup'=>'</div>'
+                       );
+  
+
+    $form['Community_start']=array(
+    '#markup'=>"<div id='community' style='display:none;'>"
+  );
+  
+    $form['Community_based_Process'] = array(
+        '#type' => 'textfield',
+        '#title' => t('Community-based Process') ,
+    );
+
+      $form['Community_end']=array(
+    '#markup'=>'</div>'
+  );
+
+    $form['Environmental_start']=array(
+    '#markup'=>"<div id='environmental' style='display:none;'>"
+  );
+  
+    $form['environmental'] = array(
+        '#type' => 'textfield',
+        '#title' => t('Environmental Changes'),
+    );
+
+      $form['environmental_end']=array(
+    '#markup'=>'</div>'
+  );
+
+  $form['Problem_Referral_start']=array(
+    '#markup'=>"<div id='problem_referral' style='display:none;'>"
+  );
+      $form['problem_referral']=array(
+    '#markup'=>'<h2>We can just not include it or include it visually but it is NOT an active link</h2>'
+  );
+      $form['problem_referral_end']=array(
+    '#markup'=>'</div>'
+  );
+
+
+
+    $Strategies_CSAP_7 = db_query("SELECT name, name FROM {taxonomy_term_data} WHERE vid = 17")->fetchAllKeyed();
+
+  $form['consump_block_start']=array(
+    '#markup'=>"<div id='StrategiesCSAP7' style='display:none;'>"
+  );
+  $form['csap_7'] = array(
+        '#type' => 'radios',
+        '#title' => t('CADCA 7') ,
+        '#options' => $Strategies_CSAP_7,
+        '#attributes'=>array("onclick"=>"showcsap7(this)")
+    );
+     $form['end_csap7']=array(
+    '#markup'=>'</div>'
+      );
+
+
+// fileds start cadca 7
+
+    $form['Enhance_Skills_starts']=array(
+    '#markup'=>"<div id='Enhance_Skills' style='display:none;'>"
+  );
+      $form['Enhance_Skills']=array(
+        '#type' => 'textfield',
+        '#title' => t('Enhance Skills'),
+  );
+
+        $form['Enhance_Activity']=array(
+        '#type' => 'select',
+        '#title' => t('Activity Type:'),
+        '#options' => array(
+            ' Youth Education Training Programs (providing information / skills),' => " Youth Education Training Programs (providing information / skills),",
+            'Parent Education Training Programs,' => "Parent Education Training Programs,",
+            'Teacher / Youth Worker Education and Training Programs,' => "Teacher / Youth Worker Education and Training Programs,",
+            'Community Member Education and Training Programs,' => "Community Member Education and Training Programs,",
+            'Business Training (e.g., responsible beverage service / vendor training [voluntary or mandatory]),' => "Business Training (e.g., responsible beverage service / vendor training [voluntary or mandatory]),",
+             'Other:' => "Other:",
+        ) ,
+  );
+
+  $form['Enhance_Skills_end']=array(
+    '#markup'=>'</div>'
+  );
+
+
+      $form['Providing_Support_starts']=array(
+    '#markup'=>"<div id='Providing_Support' style='display:none;'>"
+  );
+      $form['Providing_Support']=array(
+        '#type' => 'textfield',
+        '#title' => t('Name of activity'),
+  );
+
+        $form['Providing_Support_activity']=array(
+        '#type' => 'select',
+        '#title' => t('Activity Type:'),
+        '#options' => array(
+            'Alternative/drug-free social events,' => "Alternative/drug-free social events,",
+            'Youth organizations/ drop-in centers,' => "Youth organizations/ drop-in centers,",
+            'Organized youth recreation programs (e.g., athletics, arts, outdoor activities),' => "Organized youth recreation programs (e.g., athletics, arts, outdoor activities),",
+            'Youth/family community involvement (e.g., school or neighborhood cleanup),' => "Youth/family community involvement (e.g., school or neighborhood cleanup),",
+            'Youth/family support groups,' => "Youth/family support groups,",
+             'Other:' => "Other:",
+        ) ,
+  );
+
+  $form['Providing_Support_end']=array(
+    '#markup'=>'</div>'
+  );
+
+
+     $form['Provide_Information_starts']=array(
+    '#markup'=>"<div id='Provide_Information' style='display:none;'>"
+  );
+      $form['Provide_Information']=array(
+        '#type' => 'textfield',
+        '#title' => t('Name of activity'),
+  );
+        $form['Provide_Information_activity']=array(
+        '#type' => 'select',
+        '#title' => t('Activity Type:'),
+        '#options' => array(
+            'Media campaigns (Television/ Radio/ Print/ Billboards/ Bus or other Posters),  Media coverage: (TV/ radio/ newspaper stories),' => "Media campaigns (Television/ Radio/ Print/ Billboards/ Bus or other Posters),  Media coverage: (TV/ radio/ newspaper stories),",
+            'Informational materials prepared/ produced' => "Informational materials prepared/ produced",
+            'Informational materials disseminated' => "Informational materials disseminated",
+            'Social networking (Facebook, Twitter, etc.)' => "Social networking (Facebook, Twitter, etc.)",
+            ' Information on DFC Coalition Web site' => " Information on DFC Coalition Web site",
+             ' Direct face-to-face information sessions or Special events (e.g., fairs, community celebrations)' => " Direct face-to-face information sessions orSpecial events (e.g., fairs, community celebrations)",
+              'Others' => "Others",
+        ) ,
+         '#attributes'=>array("onclick"=>"provide_information(this)"),
+  );
+
+  $form['Provide_Information_end']=array(
+    '#markup'=>'</div>'
+  );
+
+
+
+
+  $form['Change_Consequences_starts']=array(
+    '#markup'=>"<div id='Change_Consequences' style='display:none;'>"
+  );
+      $form['Change_Consequences']=array(
+        '#type' => 'textfield',
+        '#title' => t('Title of the Change:'),
+  );
+
+        $form['Change_Consequences_activity']=array(
+        '#type' => 'select',
+        '#title' => t('Type of Change:'),
+        '#options' => array(
+            'Strengthening Enforcement,' => "Strengthening Enforcement,",
+            'Strengthening Surveillance,' => "Strengthening Surveillance,",
+            'Recognition Programs,' => "Recognition Programs,",
+            'Publicize Non-Compliance,' => "Publicize Non-Compliance,",
+             'Other:' => "Other:",
+        ) ,
+  );
+
+  $form['Change_Consequences_end']=array(
+    '#markup'=>'</div>'
+  );
+
+    $form['Change_Access_starts']=array(
+    '#markup'=>"<div id='Change_Access' style='display:none;'>"
+  );
+      $form['Change_Access']=array(
+        '#type' => 'textfield',
+        '#title' => t('Title of the Change:'),
+  );
+
+        $form['Change_Access_activity']=array(
+        '#type' => 'select',
+        '#title' => t('Type of Change:'),
+        '#options' => array(
+            'Increased Access to Substance Use Services,' => " Increased Access to Substance Use Services,",
+            'Reducing Home and Social Access to Alcohol and Other Substances,' => "Reducing Home and Social Access to Alcohol and Other Substances,",
+            'Improve supports for service use,' => "Improve supports for service use,",
+            'Improve access through culturally sensitive outreach,' => "Improve access through culturally sensitive outreach,",
+             'Other:' => "Other:",
+        ) ,
+  );
+
+  $form['Change_Access_end']=array(
+    '#markup'=>'</div>'
+  );
+
+
+     $form['Change_Policies_starts']=array(
+    '#markup'=>"<div id='Change_Policies' style='display:none;'>"
+  );
+      $form['Change_Policies']=array(
+        '#type' => 'textfield',
+        '#title' => t('Title of the Change:'),
+  );
+
+        $form['Change_Policies_activity']=array(
+        '#type' => 'select',
+        '#title' => t('Type of Change:'),
+        '#options' => array(
+            'Cost: Laws/public policies concerning cost (e.g. alcohol or tobacco tax, fees),' => "Cost: Laws/public policies concerning cost (e.g. alcohol or tobacco tax, fees),",
+            'Underage Use: Laws/public policies targeting use, possession, or behavior under the influence of minors,' => "Underage Use: Laws/public policies targeting use, possession, or behavior under the influence of minors,",
+            'Schools: Policies promoting drug-free schools,' => "Schools: Policies promoting drug-free schools,",
+            'Treatment/Prevention: Laws/ public policies promoting treatment or prevention alternatives (e.g. diversion treatment programs for underage substance use offenders),' => "Treatment/Prevention: Laws/ public policies promoting treatment or prevention alternatives (e.g. diversion treatment programs for underage substance use offenders),",
+            'Workplace: Policies promoting drug-free workplaces,' => "Workplace: Policies promoting drug-free workplaces,",
+            'Citizen enabling/Liability: Laws/ public policies concerning adult (including parent) social enabling or liability (e.g. social host ordinances),' => "Citizen enabling/Liability: Laws/ public policies concerning adult (including parent) social enabling or liability (e.g. social host ordinances),",
+            'Supplier Promotion/ Liability: Laws/ public policies concerning supplier advertising, promotion, liability (e.g. server liability, product placeent, happy hours, drink specials, ' => "Supplier Promotion/ Liability: Laws/ public policies concerning supplier advertising, promotion, liability (e.g. server liability, product placeent, happy hours, drink specials, ",
+             'mandatory compliance checks, responsible beverage service),' => "mandatory compliance checks, responsible beverage service),",
+               'Outlet Location / Density: Laws/ public policies concerning limitation and restrictions of location and density of alcohol outlets,' => "Outlet Location / Density: Laws/ public policies concerning limitation and restrictions of location and density of alcohol outlets,",
+                 'Sales Restrictions: Laws/ publicpolicies concerning restrictions on product sales (e.g., methamphetamine pre-cursor access, alcohol at gas stations),' => "Sales Restrictions: Laws/ publicpolicies concerning restrictions on product sales (e.g., methamphetamine pre-cursor access, alcohol at gas stations),",
+                   'Other:' => "Other:",
+        ) ,
+  );
+
+  $form['Change_Policies_end']=array(
+    '#markup'=>'</div>'
+  );
+
+
+  $form['Change_Consequences_end']=array(
+    '#markup'=>'</div>'
+  );
+
+
+
+    $form['Physical_Design_starts']=array(
+    '#markup'=>"<div id='Physical_Design' style='display:none;'>"
+  );
+      $form['Physical_Design']=array(
+        '#type' => 'textfield',
+        '#title' => t('Title of the Change:'),
+  );
+
+        $form['Physical_Design_activity']=array(
+        '#type' => 'select',
+        '#title' => t('Type of Change:'),
+        '#options' => array(
+            'Identify Physical Design Problems,' => "Identify Physical Design Problems,",
+            'Cleanup and Beautification,' => "Cleanup and Beautification,",
+            'Improve visibility/ease of surveillance in public places and substance use hotspots,' => "Improve visibility/ease of surveillance in public places and substance use hotspots,",
+            'Promote improved signage / advetising/ practices by suppliers,' => "Promote improved signage / advetising/ practices by suppliers,",
+             'Identify problem establishments for closure,' => "Identify problem establishments for closure,",
+              'Encourage business/ supplier designation of "no alcohol" or "no tobacco" zones),' => "Encourage business/ supplier designation of 'no alcohol' or 'no tobacco' zones),",
+              'Other:' => "Other:",
+        ) ,
+  );
+
+  $form['Physical_Design_end']=array(
+    '#markup'=>'</div>'
+  );
+
+
+    $form['media_type_starts']=array(
+    '#markup'=>"<div id='media_type' style='display:none;'>"
+  );
+
+        $form['media_type_information']=array(
+        '#type' => 'select',
+        '#title' => t('Type'),
+            '#options' => array(
+            'Billboards/Bus Boards, Editorials' => "Billboards/Bus Boards, Editorials",
+            'Media Campaign, News Articles' => "Media Campaign, News Articles",
+            'Press Conferences' => "Press Conferences",
+            'Press Releases' => "Press Releases",
+            'PSA’s' => "PSA’s",
+            'Radio Interviews' => "Radio Interviews",
+            'Television Interview' => "Television Interview",
+        ) ,
+  );
+
+  $form['media_type_end']=array(
+    '#markup'=>'</div>'
+  );
+
+
+    $form['Media_Campaign_starts']=array(
+    '#markup'=>"<div id='Media_Campaign' style='display:none;'>"
+  );
+
+        $form['Media_Campaign_information']=array(
+        '#type' => 'select',
+        '#title' => t('Type'),
+            '#options' => array(
+            'Media Campaign' => "Media Campaign",
+            'Media Coverage' => "Media Coverage",
+        ) ,
+  );
+
+  $form['Media_Campaign_end']=array(
+    '#markup'=>'</div>'
+  );
+
+
+
+
+
+      $form['media_start']=array(
+    '#markup'=>"<table id='media' style='display:none;'>
+    <tr><th>Media outlets </th><th>Submitted </th><th>Date </th><th>Published </th><th>If yes, then Publication Date </th><th>Reach </th><th>Notes </th></tr><tr>"
+  );
+
+      // media information csap 6
+  if(isset($media_company_names) && count($media_company_names)>0){
+    foreach($media_company_names as $mKey=> $mNames){
+    
+     $form['media_row_start'.$mKey] = array(
+     '#markup'=>"<tr>"
+     );
+      // media information csap 6
+    $form['Media_outlet'.$mKey] = array(
+         '#prefix' => '<td>',
+        '#type' => 'textfield',
+        '#title' => t('Submitted') ,
+        '#value' => $mNames ,
+        '#attributes' => array('readonly' => 'readonly'),
+        '#suffix' => '</td>',
+    );
+
+    $form['Media_submit'.$mKey] = array(
+              '#prefix' => '<td>',
+        '#type' => 'radios',
+        '#title' => t('Submitted') ,
+        '#options' => array(
+            'Yes' => "YES",
+            'No' => "No",
+        ) ,
+         '#suffix' => '</td>',
+    );
+    $form['media_date'.$mKey] = array(
+       '#prefix' => '<td>',
+        '#type' => 'date_popup',
+        '#title' => t('Date of published') ,
+        '#suffix' => '</td>',
+    );
+    $form['Published'.$mKey] = array(
+      '#prefix' => '<td>',
+        '#type' => 'radios',
+        '#title' => t('Published') ,
+        '#options' => array(
+            'Yes' => "YES",
+            'No' => "No",
+            '#suffix' => '</td>',
+        ) ,
+    );
+    $form['if_yes_publication'.$mKey] = array(
+            '#prefix' => '<td>',
+        '#type' => 'date_popup',
+        '#title' => t('If yes, then Publication Date ') ,
+            '#suffix' => '</td>',
+    );
+    $form['Reach'.$mKey] = array(
+          '#prefix' => '<td>',
+        '#type' => 'textfield',
+        '#title' => t('Reach') ,
+         '#suffix' => '</td>',
+    );
+    $form['media_notes'.$mKey] = array(
+       '#prefix' => '<td>',
+        '#type' => 'textarea',
+        '#title' => t('Notes') ,
+        '#suffix' => '</td>',
+    );
+    
+     $form['media_row_end'.$mKey] = array(
+     '#markup'=>"</tr>"
+     );
+                       
+     }
+     
+          $form['media_end']=array(
+                      '#markup'=>'</tr></table>'
+                       );
+ }
+
+
+     // social media information csap 6
+   $form['social_media_start']=array(
+    '#markup'=>"<table id='social_media' style='display:none;'>
+  <tr><th>Social Media Outlets </th><th>submitted </th><th>Date </th><th>Impressions </th><th>Notes </th> </tr>
+    "
+  ); 
+  
+  if(isset($media_company_names) && count($media_company_names)>0){
+    foreach($media_company_names as $mKey=> $mNames){
+         $form['social_media_row_start'.$mKey] = array(
+        '#markup'=>"<tr>"
+       );
+       $form['Social_Media_profile'.$mKey] = array(
+          '#prefix' => '<td>',
+        '#type' => 'textfield',
+        '#value' => $mNames ,
+        '#attributes' => array('readonly' => 'readonly'),
+        '#suffix' => '</td>',
+    );
+   
+    $form['Social_Media_Media_submit'.$mKey] = array(
+          '#prefix' => '<td>',
+        '#type' => 'radios',
+        '#title' => t('Submitted'),
+        '#options' => array(
+            'Yes' => "YES",
+            'No' => "No",
+        ),
+        '#suffix' => '</td>',
+    );
+    $form['social_media_date'.$mKey] = array(
+        '#prefix' => '<td>',
+        '#type' => 'date_popup',
+        '#title' => t('Date of published'),
+          '#suffix' => '</td>',
+    );
+    $form['Social_Media_media_impression'.$mKey] = array(
+       '#prefix' => '<td>',
+        '#type' => 'radios',
+        '#title' => t('Impressions'),
+        '#options' => array(
+            'Yes' => "YES",
+            'No' => "No",
+        ) ,
+        '#suffix' => '</td>',
+    );
+    $form['Social_Media_media_notes'.$mKey] = array(
+         '#prefix' => '<td>',
+        '#type' => 'textarea',
+        '#title' => t('Notes'),
+         '#suffix' => '</td>',
+    );
+    $form['social_media_row_end'.$mKey] = array(
+        '#markup'=>"</tr>"
+  );
+    
+  }
+   }
+
+     $form['social_media_end']=array(
+                      '#markup'=>'</table>'
+                       );
+
+//Funding_supports common fields for all
+
+ $form['Funding_supports_starts']=array(
+    '#markup'=>"<div id='Funding_supports' style='display:none;'>"
+  );
+    $form['Funding_supports'] = array(
+    '#type' => 'radios',
+   '#title' => t('Funding supports'),
+    '#options' => array('Did your coalition use STOP Act funds for this activity? No'=>"Did your coalition use STOP Act funds for this activity? No",'Did your coalition use STOP Act funds for this activity? yes '=>"Did your coalition use STOP Act funds for this activity? yes "),
+  );
+      $form['Funding_supports_end']=array(
+    '#markup'=>'</div>'
+  );
+
+
+  $form['Problem_Referral_all_fields_hidden_start']=array(
+    '#markup'=>"<div id='problem_referral_all_field' style='display:none;'>"
+  );
+
+
+$all_user_lists = entity_load('user');
+
+$all_user_details = json_decode(json_encode($all_user_lists), true);
+   
+   if(isset($item->personConductingContent)){
+    $personConduct_id_arr=unserialize($item->personConductingContent);
+   }
+   //echo "<pre>";print_r($personConduct_id_arr);die;
+   
+    $form['person_Conducting_starts']=array(
+    '#markup'=>"<div id='person_Conducting_changehidden' style='display:none;'>"
+  );
+   $form['personConducting']=array('#markup'=>'<div class="responsive_table"> <label>Person Conducting</label><table id="personConductingTab" class="sticky-enabled table-select-processed">
+ <thead><tr><th class="select-all"><input id="conSelectAll" class="form-checkbox" title="Select all rows in this table" type="checkbox"></th><th>First Name</th><th>Last Name</th><th>Email</th><th>Cell phone</th> </tr></thead>
+<tbody>');
+  $usersRow='';
+  foreach($all_user_details as $usersList){ //echo "<pre>";print_r($usersList);die;
+      if($usersList['uid']!="0" && isset($usersList['roles'][7]) && $usersList['roles'][7]=="Staff User"){
+        
+        $last_name_staff = db_query("SELECT field_last_name_value FROM field_data_field_last_name WHERE entity_id =".$usersList['uid'])->fetchField();
+        $cell_phone = db_query("SELECT field_cell_phone_value FROM field_data_field_cell_phone WHERE entity_id =".$usersList['uid'])->fetchField();
+        $personChkVal=(in_array($usersList['uid'],$personConduct_id_arr['person_conducting']))?'checked="checked"':'';
+        $usersRow.='<tr class="odd"><td><div class="form-item form-type-checkbox form-item-person-conducting-0">
+                <label><input id="edit-person-conducting-0" name="person_conducting[]" value="'.$usersList['uid'].'" class="form-checkbox" type="checkbox" '.$personChkVal.'></label>
+              </div>
+              </td><td>'.(($usersList['name']!="")?$usersList['name']:"").'</td><td>'.(($last_name_staff!="")?$last_name_staff:"").'</td> 
+              <td>'.(($usersList['mail']!="")?$usersList['mail']:"").'</td><td>'.(($cell_phone!="")?$cell_phone:"").'</td></tr>';
+      }
+    
+  }
+
+
+  
+   $form['personConductingContent']=array('#markup'=>$usersRow,
+
+   '#default_value' => $item->personConductingContent,
+
+    );
+     
+   $form['personConductingEnd']=array('#markup'=>'</tbody></table></div>');
+     $form['person_Conducting_end']=array(
+    '#markup'=>'</div>'
+  );
+
+
+//
+
+    $form['addtional_starts']=array(
+    '#markup'=>"<div id='addtional_fields' style='display:none;'>"
+  );
+$form['startdatetime_physical'] = array(
+      '#type' => 'date_popup',
+      '#title' => 'Start Date',
+      '#date_format' => 'Y-m-d H:i',
+      '#date_year_range' => '-3:+3',
+      '#default_value' => date('Y-m-d'),
+     );
+  $form['end_date_wrapper_physical'] = array
+  (
+    '#prefix' => '<div id="end_date_wrapper">',
+    '#suffix' => '</div>',
+    '#markup' => '',
+  );
+
+    $form['enddatetime_physical'] = array(
+      '#type' => 'date_popup',
+      '#title' => 'End Date',
+      '#date_format' => 'Y-m-d H:i',
+      '#date_year_range' => '-3:+3',
+      '#default_value' => date('Y-m-d'),
+     );
+      $form['addtional_ends']=array(
+    '#markup'=>'</div>'
+  );
+
+// for casp 7 additional fields 
+
+     $form['number_adult_Business_starts']=array(
+    '#markup'=>"<div id='number_adult_Business' style='display:none;'>"
+  );
+
+$form['number_adult_Business_design'] = array(
+  '#type' => 'textfield',
+  '#title' => t('Number of businesses reached') ,
+  '#maxlength' => 10, 
+  '#size' => 3, 
+       '#default_value' => $item->number_adult_served,
+);
+$form['Business_design'] = array(
+  '#type' => 'textfield',
+  '#title' => t('Purpose:'),
+);
+      $form['number_adult_Business_ends']=array(
+    '#markup'=>'</div>'
+  );
+
+
+// for casp 7 additional fields 
+
+     $form['number_adult_physical_starts']=array(
+    '#markup'=>"<div id='number_adult_physical' style='display:none;'>"
+  );
+
+$form['number_adult_physical_design'] = array(
+  '#type' => 'textfield',
+  '#title' => t('Number of Adult served') ,
+  '#maxlength' => 10, 
+  '#size' => 3, 
+       '#default_value' => $item->number_adult_served,
+);
+$form['number_youth_physical_design'] = array(
+  '#type' => 'textfield',
+  '#title' => t('Number of youth served') ,
+  '#maxlength' => 10, 
+  '#size' => 3, 
+  '#default_value' => $item->number_adult_served,
+);
+
+$form['purpose_design'] = array(
+  '#type' => 'textfield',
+  '#title' => t('Purpose:'),
+);
+      $form['number_adult_physical_ends']=array(
+    '#markup'=>'</div>'
+  );
+
+
+
+   
+  $form['media_hidden']=array('#markup'=>"<div id='media_lenght' style='display:none;'>");
+
+$form['startdatetime'] = array(
+      '#type' => 'date_popup',
+      '#title' => 'Start Date',
+      '#date_format' => 'Y-m-d H:i',
+      '#date_year_range' => '-3:+3',
+      '#default_value' => date('Y-m-d'),
+     );
+  $form['end_date_wrapper'] = array
+  (
+    '#prefix' => '<div id="end_date_wrapper">',
+    '#suffix' => '</div>',
+    '#markup' => '',
+  );
+
+    $form['enddatetime'] = array(
+      '#type' => 'date_popup',
+      '#title' => 'End Date',
+      '#date_format' => 'Y-m-d H:i',
+      '#date_year_range' => '-3:+3',
+      '#default_value' => date('Y-m-d'),
+     );
+    
+
+    $form['Length_of_services'] =array(
+       '#type' => 'textfield',
+       '#title' => 'Length of Service (in minutes)',
+       '#required'=>TRUE,
+       '#default_value' => $item->Length_of_services,
+    );
+
+
+    $form['location'] =array(
+       '#type' => 'textfield',
+       '#title' => 'Location',
+   '#default_value' => $item->location,
+    );
+
+
+    $form['address_1'] = array(
+        '#type' => 'textfield',
+        '#title' => t('Address 1'),
+         '#default_value' => $item->address_1, 
+    );
+    $form['address_2'] = array(
+        '#type' => 'textfield',
+        '#title' => t('Address 2') ,
+          '#default_value' => $item->address_2, 
+    );
+      $form['city'] =array(
+       '#type' => 'textfield',
+       '#title' => 'City',
+      '#default_value' => $item->city,
+    );
+
+
+$form['states'] = array(
+'#prefix'=>'<div class="select_section capacity_select_Section">',
+    '#suffix'=>'</div>',
+'#title' => t('State') ,
+'#type' => 'select',
+'#options' => array('Alabama'=>"Alabama", 'Alaska'=>"Alaska", 'Arizona'=>"Arizona",'Arkansas'=>"Arkansas",
+'California'=>"California",
+'Colorado'=>"Colorado",
+'Connecticut'=>"Connecticut",
+'District of Columbia'=>"District of Columbia",
+'Flocapacity_ida'=>"Flocapacity_ida",
+'Georgia'=>"Georgia",
+'Hawaii'=>"Hawaii",
+'Iowa'=>"Iowa",
+'Kansas'=>"Kansas",
+'Louisiana'=>"Louisiana",
+'Maine'=>"Maine",
+'Massachusetts'=>"Massachusetts",
+'Michigan'=>"Michigan",
+'Minnesota'=>"Minnesota",
+'Mississippi'=>"Mississippi",
+'Missouri'=>"Missouri",
+'Montana'=>"Montana",'Nebraska'=>"Nebraska",
+'Nevada'=>"Nevada",
+'New Hampshire'=>"New Hampshire",
+'New Jersey'=>"New Jersey",
+'New Mexico'=>"New Mexico",'New York'=>"New York",
+'North Carolina'=>"North Carolina",
+'North Dakota'=>"North Dakota",
+'Ohio'=>"Ohio",
+'Oklahoma'=>"Oklahoma",
+'Oregon'=>"Oregon",
+'Pennsylvania'=>"Pennsylvania",
+'Rhode Island'=>"Rhode Island",
+'South Carolina'=>"South Carolina",
+'South Dakota'=>"South Dakota",
+'Tennessee'=>"Tennessee",
+'Texas'=>"Texas",
+'Utah'=>"Utah",
+'Vermont'=>"Vermont",
+'Virginia'=>"Virginia",
+'Washington'=>"Washington",
+'West Virginia'=>"West Virginia",
+'Wisconsin'=>"Wisconsin",
+'Wyoming'=>"Wyoming",
+'Armed Forces (Americas)'=>"Armed Forces (Americas)",
+'Armed Forces (Europe, Canada, Middle East, Africa)'=>"Armed Forces (Europe, Canada, Middle East, Africa)",
+'Armed Forces (Pacific)'=>"Armed Forces (Pacific)",
+'American Samoa'=>"American Samoa",
+'Federated States of Micronesia'=>"Federated States of Micronesia",
+'Guam'=>"Guam",
+'Marshall Islands'=>"Marshall Islands",
+'Northern Mariana Islands'=>"Northern Mariana Islands",
+'Palau'=>"Palau",
+'Puerto Rico'=>"Puerto Rico",
+'Virgin Islands'=>"Virgin Islands"
+  ),
+   '#default_value' => $item->states,
+);
+
+
+   $form['zip_code'] = array(
+        '#type' => 'textfield',
+        '#title' => t('Zipcode') ,
+      '#element_validate' => array('element_validate_number'),
+        '#maxlength' => 6,
+            '#default_value' => $item->zip_code,
+              '#suffix' => '</table>
+    ', // Don't forget to close the table rows, and finally the table.
+    );
+
+
+$form['number_adult_served'] = array(
+  '#type' => 'textfield',
+  '#title' => t('Number of Adult served') ,
+  '#maxlength' => 10, 
+  '#size' => 3, 
+  '#required' => TRUE,
+       '#default_value' => $item->number_adult_served,
+);
+$form['number_youth_served'] = array(
+  '#type' => 'textfield',
+  '#title' => t('Number of youth served') ,
+  '#maxlength' => 10, 
+  '#size' => 3, 
+  '#required' => TRUE,
+  '#default_value' => $item->number_adult_served,
+);
+
+
+     $form['media_hidden_length']=array(
+    '#markup'=>'</div>'
+  );
+
+
+ $form['Level_Success_starts']=array(
+    '#markup'=>"<div id='Level_Success' style='display:none;'>"
+  );
+
+//csap 7 fields 
+   $form['Level_Success'] = array(
+    '#type' => 'radios',
+    '#title' => t('Level of Success:'),
+    '#options' => array('Not Successful '=>"Not Successful ",'Moderately Successful'=>"Moderately Successful",'Very Successful '=>"Very Successful"),
+  );
+
+      $form['Level_Success_end']=array(
+    '#markup'=>'</div>'
+  );
+
+
+
+
+$form['description_of_purpose'] = array(
+       '#type' => 'textarea',
+       '#title' => t('Description of Purpose'),
+       '#required'=>TRUE,
+        '#default_value' => $item->description_of_purpose,
+  );
+
+
+$form['description_of_outcome'] = array(
+       '#type' => 'textarea',
+       '#title' => t('Description of Outcome'),
+       '#required'=>TRUE,
+       '#default_value' => $item->description_of_outcome,
+  );
+
+
+
+// prerson conducting activities
+
+   if(isset($item->Members_Invloved)){
+    $members_id_arr=unserialize($item->Members_Invloved);
+   }
+  //echo "<pre>";print_r($item);die;
+   $form['membersInvolvedStart']=array('#markup'=>'<div class="responsive_table"><label>Members Involved</label><table id="membersInvolvedTab" class="sticky-enabled table-select-processed">
+ <thead><tr><th class="select-all"><input id="memSelectAll" class="form-checkbox" title="Select all rows in this table" type="checkbox"></th><th>First Name</th><th>Last Name</th><th>Email</th><th>Cell phone</th><th>Company organization</th> </tr></thead>
+<tbody>');
+  $membersRow='';
+  foreach($all_user_details as $membersList){ //echo "<pre>";print_r($membersList);die;
+      if($membersList['uid']!="0" && $membersList['roles'][7]!="Staff User"){
+        $last_name_staff = db_query("SELECT field_last_name_value FROM field_data_field_last_name WHERE entity_id =".$membersList['uid'])->fetchField();//echo $last_name_staff."<pre>";print_r($usersList);die;
+        $cell_phone = db_query("SELECT field_cell_phone_value FROM field_data_field_cell_phone WHERE entity_id =".$membersList['uid'])->fetchField();
+        $org_name = db_query("SELECT field_company_organization_value FROM field_data_field_company_organization WHERE entity_id =".$membersList['uid'])->fetchField();
+        $memChkVal=(in_array($membersList['uid'],$members_id_arr['Members_Invloved']))?'checked="checked"':'';
+        $membersRow.='<tr class="odd"><td><div class="form-item form-type-checkbox form-item-person-conducting-0">
+                <input id="edit-person-conducting-0" name="Members_Invloved[]" value="'.$membersList['uid'].'" class="form-checkbox" type="checkbox" '.$memChkVal.'>
+              </div>
+              </td><td>'.$membersList['name'].'</td><td>'.(($last_name_staff!="")?$last_name_staff:"").'</td><td>'.$membersList['mail'].'</td>
+              <td>'.(($cell_phone!="")?$cell_phone:"").'</td><td>'.(($org_name!="")?$org_name:"").'</td></tr>';
+      }
+    
+  }
+  
+   $form['Members_Invloved']=array('#markup'=>$membersRow);
+     
+   $form['membersInvolvedEnd']=array('#markup'=>'</tbody></table></div>');
+   
+
+
+$form['Donation1'] = array(
+'#markup' => '<div class="responsive_table"><table id="myTable" class=" table order-list">
+    <thead>
+        <tr>
+            <td>Donation</td>
+            <td>Monetary Value</td>
+            <td>Comment</td>
+      <td class="table_remove_title">Remove</td>
+        </tr>
+    </thead>
+    <tbody>
+'
+);
+
+
+$form['Title-donation'] = array(
+  '#markup' => '<label>Donation </label>'
+  );
+
+$form['Donation_select']['0'] = array(
+
+'#type' => 'select',
+
+'#options' => array('Materials'=>"Materials", 'Food and refreshments'=>"Food and refreshments", 'Marketing'=>"Marketing",'Support'=>"Support"),
+'#prefix' => '<tr>
+<td class="table_heading"><div class="select_section capacity_select_Section">',
+   '#default_value' => $item->Donation_select,
+   '#suffix' => '</div></td>
+    ',
+);
+
+
+$form['Monetary_Value']['0']= array(
+  '#prefix' => '  <td class="table_heading">',
+  '#type' => 'textfield',
+  '#maxlength' => 10, 
+  '#size' => 10, 
+  '#required' => TRUE,
+  '#suffix' => '</td>
+    ',
+       '#default_value' => $item->Monetary_Value,
+);
+
+if(isset($item->Attachments_fid) && $item->Attachments_fid!=''){
+    $fid=$item->Attachments_fid;
+    $file_upload_details = db_query("SELECT * FROM {file_managed} WHERE fid = ".$fid)->fetchAll();
+    //echo "<pre>";print_r($file_upload_details);die;
+    $fURI=$file_upload_details[0]->uri;
+    $fname=$file_upload_details[0]->filename;
+    $fileURI=file_create_url($fURI);
+}
+$form['Comment']['0']= array(
+  '#prefix' => '<td class="table_heading">',
+  '#type' => 'textarea',
+    '#rows' => 5,
+    '#cols' => 30, 
+  '#suffix' => '</td></tr>
+        </table></div>
+    
+        <div id="addrow" class="button button_addmore">
+                <input type="button" class="btn btn-lg btn-block add_more_btn"  value="Add More field" />
+        </div>
+                 
+    ', // Don't forget to close the table rows, and finally the table.
+      '#default_value' => $item->Comment,
+);
+
+ 
+
+  $form['hidden_field']=array(
+      '#type'=>"hidden",
+      '#value'=>"0",
+      '#attributes' => array('name'=>'[0]'),
+      '#attributes'=>array("id"=>"hidden_id")
+    );
+
+
+$form['Attachments-title'] = array(
+  '#markup' => '<label>Attachment</label>'
+  );
+
+
+
+
+$form['Attachments_files'] = array(
+  '#prefix' => '<div class="responsive_table">
+    <table id="myTable2" class="table order-list-att">
+      <tr><th>' . t('Attachments') . '</th><th>' . t('Comments') . '</th><th class="table_remove_title1">Remove</th></tr>'.'<tr><td class="table_heading"> 
+    ',
+);
+$form['Attachments_fid'] =  array(
+  '#type' => 'managed_file_multiple',
+   '#title' => 'Managed file field',
+    '#upload_validators' => array('file_validate_extensions' => array('pdf doc docx ')),
+    '#upload_location' => 'public://capacity_documents/',
+      '#description' => t('<a href='.$fileURI.'> '.$fname.'</a> <br>Please use the Choose file button to attach a response document<br><strong>Allowed extensions: pdf doc docx</strong>.'),
+'#prefix' => '<tr>
+<td class="table_heading">',
+   '#suffix' => '</td>
+    ',
+  );
+ 
+  
+$form['Attachments_notes'] = array(
+  '#prefix' => '<td class="table_heading">',
+  '#type' => 'textarea',
+    '#rows' => 5,
+    '#cols' => 30, 
+  '#suffix' => '</td></tr>
+        </table></div>
+    <td colspan="5" style="text-align: left;">
+      <div class="button button_addmore" style="display:none;">
+                <input  type="button" class="btn btn-lg btn-block " id="addrow-list" value="Add More field" />
+      </div>
+            </td>      
+    ', // Don't forget to close the table rows, and finally the table.
+      '#default_value' => $item->Attachments_notes,
+);
+
+
+
+   // $form['pending_field'] = array(
+   //     '#type' => 'checkboxes',
+       //'#title' => t('Pending'),
+    //   '#options' => array('1'=>"Pending"),
+  // );
+
+   $form['signature'] = array(
+        '#type' => 'radios',
+       '#title' => t('Signature'),
+       '#options' => array('yes'=>"Pending",'1'=>"I certify that the information above is true, accurate and correct to the best of my knowledge. "),
+       '#required'=>TRUE,
+   );
+   
+      $form['attachment_upload_id']=array(
+      '#type'=>"hidden",
+      '#value'=>$item->Attachments_fid,
+    );
+
+       $form['problem_referral_hiiden_end']=array(
+    '#markup'=>'</div>'
+  );
+
+    
+    $form['submit'] = array
+    (
+    '#type' => 'submit',
+    '#value' => t('Save'),
+    );
+  
+  
+  return $form;
+}
+
+
+function implementation_edit_item_form($form, &$form_state, $item)
+{
+  global $user;
+    $form['#attributes']['enctype'] = 'multipart/form-data';
+    
+    $base_url=$GLOBALS['base_url'];
+    
+    drupal_set_title("Implementation Edit Page");
+
+
+    $contributing_factor = db_query("SELECT name, name FROM {taxonomy_term_data} WHERE vid = 12")->fetchAllKeyed();
+
+    $interventions = db_query("SELECT name, name FROM {taxonomy_term_data} WHERE vid = 28")->fetchAllKeyed();
+      $query = db_select('planning_details','a');
+      $query->fields('a', array('planning_id','title'));
+      $query->orderBy('a.title','ASC');
+      $planning_lists = $query->execute()->fetchAll();
+  $planCount=0;$lmCount=0;
+      foreach($planning_lists as $plankey=>$planVal){ 
+    $plan_id=$planVal->planning_id;
+    $plan_title=$planVal->title;
+    $planning_data_lists = db_query("SELECT * FROM {planning_details} WHERE planning_id = ".$plan_id)->fetchAll();
+    //echo "<pre>";print_r($planning_data_lists);die;
+
+    $chkSerialize = @unserialize($planning_data_lists[0]->contributing_factor);
+    if ($chkSerialize !== false) {
+      $contributingFactor=unserialize($planning_data_lists[0]->contributing_factor);
+        $interventionsCheckedItems=unserialize($planning_data_lists[0]->interventions);
+        $logicModelCount=count($contributingFactor['contributingCollection']);
+      $conSelectedItems="";$intSelectedItems="";
+     $contributingItems='<div id="firstTable_'.$plankey.'" class="heading_tag">
+              <h3>'.$plan_title.'</h3>
+              <div class="select_btn" style="display:none;">
+                <div class="form-checkboxes">
+                  <div class="form-item form-type-checkbox">
+                    <label><input id="checkAllLogicModel" type="checkbox" value="" class="form-checkbox" name="contributing_factor" onchange="checkAllRadioFunc(this,'.$planCount.')"> Select all/Select none</label>
+                  </div>
+                </div>
+              </div>
+            </div>  
+  <div class="logicmodel_inter_con" id="logicmodel_inter_con_'.$planCount.'">';
+     $planCount++;
+       $unCFValues=unserialize($item->contributing_factor_models);
+       $unINValues=unserialize($item->intervention_models); 
+      $ico=1;//echo $logicModelCount;die;
+       for($i=0;$i<$logicModelCount;$i++){
+        $ichange=$plankey.'_'.$i;
+       
+        $contributingItems.='<div class="capacity_logic_section"><div id="conFactorTable_'.$i.'" class="conFactorTab">
+                           <div class="form-type-checkboxes"><label class="heading_label">Contributing Factor</label>';
+      foreach($contributing_factor as $fKey=>$fVal){ 
+          if($fVal==trim($contributingFactor['contributingCollection']['contribCollection'.$i])){
+        $cfCheck=($unCFValues['contributing_factor']['contributing_factor'.$ichange]==trim($contributingFactor['contributingCollection']['contribCollection'.$i]))?'checked':''; 
+            $contributingItems.='<div class="form-checkboxes">
+                      <div class="form-item form-type-checkbox"><label><span> '.$fVal.'</span></label></div>
+                      </div>';
+          }
+
+      }
+      $contributingItems.='</div></div>
+      <div id="intervTable_'.$i.'" class="interventions intervTab">
+          <div class="form-type-checkboxes"><label class="heading_label">Interventions</label>
+      ';
+
+      foreach($interventions as $cKey=>$cVal){ 
+           if(in_array($cVal,$interventionsCheckedItems['interventionCollection']['internCollection'.$i])){
+         $inCheck=(in_array($cVal,$unINValues['interventions']['interventions'.$ichange]))?'checked':'';
+            $contributingItems.='<div class="form-checkboxes">
+                                <div class="form-item form-type-checkbox"><label><input type="radio" value="'.$cVal.'" class="form-radio" name="interventions'.$ichange.'[]" '.$inCheck.'><span> '.$cVal.'</span></label></div>
+                     </div>';
+           }
+
+      }
+      
+      $contributingItems.='</div></div></div>';
+      
+      //$contributingItems.='</table>';
+      
+        #--------------------------------------
+        # create a "planning logic model" fieldset
+        #--------------------------------------
+        $form['planningLogicModel'.$plankey] = array(
+        '#type' => 'fieldset',
+        '#title' => t($plan_title),
+        '#collapsible' => TRUE,
+        '#collapsed' => ($plankey=="0")?FALSE:TRUE,
+        );
+         
+      $ico++;
+
+
+}  
+
+  $contributingItems.='</div></table>';
+    $form['planningLogicModel'.$plankey]['contributing_intervention'.$plankey] =array(
+    "#title"  => 'Logic model',
+    "#markup"=> $contributingItems
+    );
+    
+    $form['table_count_id']=array(
+      '#type'=>"hidden",
+      '#value'=>($logicModelCount-1),
+      '#attributes'=>array("id"=>"LogicModelCountId")
+    );
+        
+    } else {
+      
+      $contributingFactor=$planning_data_lists[0]->contributing_factor;
+      $interventionsCheckedItems=explode(",",$planning_data_lists[0]->interventions);
+      
+      $ichange=$plankey.'_'.$lmCount;
+       $unCFValues=unserialize($item->contributing_factor_models);
+       $unINValues=unserialize($item->intervention_models);
+      
+      $contributingItems="";
+    foreach($contributing_factor as $fKey=>$fVal){
+        if($contributingFactor==$fVal){
+      $cfCheck=($unCFValues['contributing_factor']['contributing_factor'.$ichange]==$contributingFactor)?'checked':'';
+          $contributingItems.='<div class="form-checkboxes">
+                                <div class="form-item form-type-checkbox"><label><span> '.$fVal.' </span><label></div>
+                  </div>';
+        }
+    }
+
+    $interventionsItems="";
+    foreach($interventions as $cKey=>$cVal){ //echo $cVal."<pre>";print_r($interventionsCheckedItems);die;
+         if(in_array($cVal,$interventionsCheckedItems)){
+       $inCheck=(in_array($cVal,$unINValues['interventions']['interventions'.$ichange]))?'checked':'';
+          $interventionsItems.='<div class="form-checkboxes">
+                                <div class="form-item form-type-checkbox"><label><input type="radio" value="'.$cVal.'" class="form-radio" name="interventions'.$ichange.'[]" '.$inCheck.'><span> '.$cVal.'</span><label></div>
+                    </div>';
+         }
+    }
+        #--------------------------------------
+        # create a "planning logic model" fieldset
+        #--------------------------------------
+        $form['planningLogicModel'.$plankey] = array(
+        '#type' => 'fieldset',
+        '#title' => t($plan_title),
+        '#collapsible' => TRUE,
+        '#collapsed' => ($plankey=="0")?FALSE:TRUE,
+        );
+
+    $form['planningLogicModel'.$plankey]['contributing_intervention'.$plankey] =array(
+    "#title"  => 'Logic model',
+      "#markup"=> '
+      <div id="firstTable'.$plankey.'" class="heading_tag">
+      <h3>'.$plan_title.'</h3>
+      <div class="select_btn" style="display:none;">
+        <div class="form-checkboxes">
+          <div class="form-item form-type-checkbox">
+            <label><input id="checkAllLogicModel" type="checkbox" value="" name="contributing_factor" class="form-checkbox" onchange="checkAllRadioFunc(this,'.$planCount.')"> Select all/Select none</label>
+          </div>
+        </div>
+      </div>
+    </div>
+ <div class="logicmodel_inter_con" id="logicmodel_inter_con_'.$planCount.'">
+           <div class="capacity_logic_section">
+               <div id="conFactorTab" class="conFactorTab">
+          <div class="form-type-checkboxes">
+            <label class="heading_label">Contributing Factor</label>
+                            '.$contributingItems.'
+                     </div>
+        </div>
+                <div id="intervTab" class="interventions intervTab">
+          <div class="form-type-checkboxes">
+            <label class="heading_label">Interventions</label>
+                           '.$interventionsItems.'
+                   </div>
+        </div>
+            </div>
+        </div>
+</table>');
+
+    $form['table_count_id']=array(
+      '#type'=>"hidden",
+      '#value'=>0,
+      '#attributes'=>array("id"=>"LogicModelCountId")
+    );
+    
+    $planCount++;
+    $lmCount++;
+      
+    }
+
+}
+
+$all_user_lists = entity_load('user');
+
+$all_user_details = json_decode(json_encode($all_user_lists), true);
+   
+   
+   
+   
+   if(isset($item->personConductingContent)){
+    $personConduct_id_arr=unserialize($item->personConductingContent);
+   }
+   //echo "<pre>";print_r($personConduct_id_arr);die;
+   
+   
+   $form['personConducting']=array('#markup'=>'<div class="responsive_table"><label>Person Conducting</label><table id="personConductingTab" class="sticky-enabled table-select-processed">
+ <thead><tr><th class="select-all"><input id="conSelectAll" class="form-checkbox" title="Select all rows in this table" type="checkbox"></th><th>First Name</th><th>Last Name</th><th>Email</th><th>Cell phone</th> </tr></thead>
+<tbody>');
+  $usersRow='';
+  foreach($all_user_details as $usersList){ //echo "<pre>";print_r($usersList);die;
+      if($usersList['uid']!="0" && isset($usersList['roles'][7]) && $usersList['roles'][7]=="Staff User"){
+        
+        $last_name_staff = db_query("SELECT field_last_name_value FROM field_data_field_last_name WHERE entity_id =".$usersList['uid'])->fetchField();
+        $cell_phone = db_query("SELECT field_cell_phone_value FROM field_data_field_cell_phone WHERE entity_id =".$usersList['uid'])->fetchField();
+        $personChkVal=(in_array($usersList['uid'],$personConduct_id_arr['person_conducting']))?'checked="checked"':'';
+        $usersRow.='<tr class="odd"><td><div class="form-item form-type-checkbox form-item-person-conducting-0">
+                <input id="edit-person-conducting-0" name="person_conducting[]" value="'.$usersList['uid'].'" class="form-checkbox" type="checkbox" '.$personChkVal.'>
+              </div>
+              </td><td>'.(($usersList['name']!="")?$usersList['name']:"").'</td><td>'.(($last_name_staff!="")?$last_name_staff:"").'</td> 
+              <td>'.(($usersList['mail']!="")?$usersList['mail']:"").'</td><td>'.(($cell_phone!="")?$cell_phone:"").'</td></tr>';
+      }
+    
+  }
+
+
+  
+   $form['personConductingContent']=array('#markup'=>$usersRow,
+
+   '#default_value' => $item->personConductingContent,
+
+    );
+     
+   $form['personConductingEnd']=array('#markup'=>'</tbody></table></div>');
+   
+
+$form['startdatetime'] = array(
+      '#type' => 'date_popup',
+      '#title' => 'Start Date',
+      '#date_format' => 'Y-m-d H:i',
+      '#date_year_range' => '-3:+3',
+      '#default_value' => date('Y-m-d H:i'),
+     );
+  $form['end_date_wrapper'] = array
+  (
+    '#prefix' => '<div id="end_date_wrapper">',
+    '#suffix' => '</div>',
+    '#markup' => '',
+  );
+
+    $form['enddatetime'] = array(
+      '#type' => 'date_popup',
+      '#title' => 'End Date',
+      '#date_format' => 'Y-m-d H:i',
+      '#date_year_range' => '-3:+3',
+      '#default_value' => date('Y-m-d H:i'),
+     );
+    
+
+
+    $form['Length_of_services'] =array(
+       '#type' => 'textfield',
+       '#title' => 'Length of Service (in minutes)',
+       '#required'=>TRUE,
+       '#default_value' => $item->Length_of_services,
+    );
+
+
+    $form['location'] =array(
+       '#type' => 'textfield',
+       '#title' => 'Location',
+   '#default_value' => $item->location,
+    );
+    $form['address_1'] = array(
+        '#type' => 'textfield',
+        '#title' => t('Address 1'),
+         '#default_value' => $item->address_1, 
+    );
+    $form['address_2'] = array(
+        '#type' => 'textfield',
+        '#title' => t('Address 2') ,
+          '#default_value' => $item->address_2, 
+    );
+      $form['city'] =array(
+       '#type' => 'textfield',
+       '#title' => 'City',
+      '#default_value' => $item->city,
+    );
+
+
+$form['states'] = array(
+'#prefix'=>'<div class="select_section capacity_select_Section">',
+    '#suffix'=>'</div>',
+'#type' => 'select',
+'#title' => t('State') ,
+'#options' => array('Alabama'=>"Alabama", 'Alaska'=>"Alaska", 'Arizona'=>"Arizona",'Arkansas'=>"Arkansas",
+'California'=>"California",
+'Colorado'=>"Colorado",
+'Connecticut'=>"Connecticut",
+'District of Columbia'=>"District of Columbia",
+'Flocapacity_ida'=>"Flocapacity_ida",
+'Georgia'=>"Georgia",
+'Hawaii'=>"Hawaii",
+'Iowa'=>"Iowa",
+'Kansas'=>"Kansas",
+'Louisiana'=>"Louisiana",
+'Maine'=>"Maine",
+'Massachusetts'=>"Massachusetts",
+'Michigan'=>"Michigan",
+'Minnesota'=>"Minnesota",
+'Mississippi'=>"Mississippi",
+'Missouri'=>"Missouri",
+'Montana'=>"Montana",'Nebraska'=>"Nebraska",
+'Nevada'=>"Nevada",
+'New Hampshire'=>"New Hampshire",
+'New Jersey'=>"New Jersey",
+'New Mexico'=>"New Mexico",'New York'=>"New York",
+'North Carolina'=>"North Carolina",
+'North Dakota'=>"North Dakota",
+'Ohio'=>"Ohio",
+'Oklahoma'=>"Oklahoma",
+'Oregon'=>"Oregon",
+'Pennsylvania'=>"Pennsylvania",
+'Rhode Island'=>"Rhode Island",
+'South Carolina'=>"South Carolina",
+'South Dakota'=>"South Dakota",
+'Tennessee'=>"Tennessee",
+'Texas'=>"Texas",
+'Utah'=>"Utah",
+'Vermont'=>"Vermont",
+'Virginia'=>"Virginia",
+'Washington'=>"Washington",
+'West Virginia'=>"West Virginia",
+'Wisconsin'=>"Wisconsin",
+'Wyoming'=>"Wyoming",
+'Armed Forces (Americas)'=>"Armed Forces (Americas)",
+'Armed Forces (Europe, Canada, Middle East, Africa)'=>"Armed Forces (Europe, Canada, Middle East, Africa)",
+'Armed Forces (Pacific)'=>"Armed Forces (Pacific)",
+'American Samoa'=>"American Samoa",
+'Federated States of Micronesia'=>"Federated States of Micronesia",
+'Guam'=>"Guam",
+'Marshall Islands'=>"Marshall Islands",
+'Northern Mariana Islands'=>"Northern Mariana Islands",
+'Palau'=>"Palau",
+'Puerto Rico'=>"Puerto Rico",
+'Virgin Islands'=>"Virgin Islands"
+  ),
+   '#default_value' => $item->states,
+);
+
+
+   $form['zip_code'] = array(
+        '#type' => 'textfield',
+        '#title' => t('Zip code') ,
+            '#default_value' => $item->zip_code,
+              '#suffix' => '</table>
+    ', // Don't forget to close the table rows, and finally the table.
+    );
+
+
+$form['number_adult_served'] = array(
+  '#type' => 'textfield',
+  '#title' => t('Number of Adult served') ,
+  '#maxlength' => 10, 
+  '#size' => 3, 
+  '#required' => TRUE,
+       '#default_value' => $item->number_adult_served,
+);
+$form['number_youth_served'] = array(
+  '#type' => 'textfield',
+  '#title' => t('Number of youth served') ,
+  '#maxlength' => 10, 
+  '#size' => 3, 
+  '#required' => TRUE,
+  '#default_value' => $item->number_adult_served,
+);
+
+
+$form['description_of_purpose'] = array(
+       '#type' => 'textarea',
+       '#title' => t('Description of Purpose'),
+       '#required'=>TRUE,
+        '#default_value' => $item->description_of_purpose,
+  );
+
+
+$form['description_of_outcome'] = array(
+       '#type' => 'textarea',
+       '#title' => t('Description of Outcome'),
+       '#required'=>TRUE,
+       '#default_value' => $item->description_of_outcome,
+  );
+
+
+
+// prerson conducting activities
+
+   if(isset($item->Members_Invloved)){
+    $members_id_arr=unserialize($item->Members_Invloved);
+   }
+  //echo "<pre>";print_r($item);die;
+   $form['membersInvolvedStart']=array('#markup'=>'<div class="responsive_table"><label>Members Involved</label><table id="membersInvolvedTab" class="sticky-enabled table-select-processed">
+ <thead><tr><th class="select-all"><input id="memSelectAll" class="form-checkbox" title="Select all rows in this table" type="checkbox"></th><th>First Name</th><th>Last Name</th><th>Email</th><th>Cell phone</th><th>Company organization</th> </tr></thead>
+<tbody>');
+  $membersRow='';
+  foreach($all_user_details as $membersList){ 
+      if($membersList['uid']!="0" && $membersList['roles'][7]!="Staff User"){
+        $last_name_staff = db_query("SELECT field_last_name_value FROM field_data_field_last_name WHERE entity_id =".$membersList['uid'])->fetchField();//echo $last_name_staff."<pre>";print_r($usersList);die;
+        $cell_phone = db_query("SELECT field_cell_phone_value FROM field_data_field_cell_phone WHERE entity_id =".$membersList['uid'])->fetchField();
+        $org_name = db_query("SELECT field_company_organization_value FROM field_data_field_company_organization WHERE entity_id =".$membersList['uid'])->fetchField();
+        $memChkVal=(in_array($membersList['uid'],$members_id_arr['Members_Invloved']))?'checked="checked"':'';
+        $membersRow.='<tr class="odd"><td><div class="form-item form-type-checkbox form-item-person-conducting-0">
+                <input id="edit-person-conducting-0" name="Members_Invloved[]" value="'.$membersList['uid'].'" class="form-checkbox" type="checkbox" '.$memChkVal.'>
+              </div>
+              </td><td>'.$membersList['name'].'</td><td>'.(($last_name_staff!="")?$last_name_staff:"").'</td><td>'.$membersList['mail'].'</td>
+              <td>'.(($cell_phone!="")?$cell_phone:"").'</td><td>'.(($org_name!="")?$org_name:"").'</td></tr>';
+      }
+    
+  }
+  
+   $form['Members_Invloved']=array('#markup'=>$membersRow);
+     
+   $form['membersInvolvedEnd']=array('#markup'=>'</tbody></table></div>');
+   
+
+if(isset($item->Donation_select) && $item->Donation_select!=''){
+    $Donation_select_id=$item->Donation_select;
+}
+
+if(isset($item->Monetary_Value) && $item->Monetary_Value!=''){
+    $Monetary_Value_id=$item->Monetary_Value;
+}
+
+if(isset($item->Comment) && $item->Comment!=''){
+    $Comment_id=$item->Comment;
+}
+
+
+$Donation_data = unserialize($Donation_select_id);
+
+$Monetary_Value_data = unserialize($Monetary_Value_id);
+
+$Comment_data = unserialize($Comment_id);
+
+//echo "<pre>";print_r($Monetary_Value_data);die;
+$donation_data="";
+if(isset($Donation_data['Donation_select']) && count($Donation_data['Donation_select'])>0){
+foreach ($Donation_data['Donation_select'] as $key => $value) {
+  
+$donation_data.='<tr>
+          <td class="table_heading">
+            <div id="remove-Donation'.$key.'" class="new_data">
+              <div class="remove-edit'.$key.'" >
+                <div class="select_section capacity_select_Section">
+                   <select name="Donation_select['.$key.']" id="edit-'.$key.'" class="form-select">
+                     <option value="Materials" '.(($value=="Materials")?"selected=selected":"").'>Materials</option>
+                     <option value="Food and refreshments" '.(($value=="Food and refreshments")?"selected=selected":"").'>Food and refreshments</option>
+                     <option value="Marketing" '.(($value=="Marketing")?"selected=selected":"").'>Marketing</option>
+                     <option value="Support" '.(($value=="Support")?"selected=selected":"").'>Support</option>
+                   </select>
+                </div>
+              </div>
+            </div>
+          </td>';
+
+$donation_data.='<td class="table_heading"> 
+          <div id="remove-Monetary'.$key.'">
+            <div class="remove-edit'.$key.'">
+              <input name="Monetary_Value['.$key.']" id="edit-'.$key.'" value="'.$Monetary_Value_data['Monetary_Value'][$key].'" size="60" maxlength="128" class="form-text" type="text">
+            </div>
+          </div>
+        </td>';
+
+$donation_data.='<td class="table_heading">
+          <div id="remove-Comment'.$key.'" class="remove-edit'.$key.'">
+            <div class="form-item form-type-textarea form-item-'.$key.'">
+              <div class="form-textarea-wrapper resizable textarea-processed resizable-textarea">
+                <textarea name="Comment['.$key.']" id="edit-'.$key.'" cols="60" rows="5" class="form-textarea">'.$Comment_data['Comment'][$key].'</textarea>
+              </div>
+            </div>
+          </div>
+        </td>';
+$donation_data.='<td class="table_heading">
+          <div  class="button button_remove">
+            <input type="button" id="remove-edit'.$key.'" class="remove-edit btn-danger" onclick="donation(this,'.$key.')" value="Remove">
+          </div>
+        </td>
+      </tr>';
+  
+}
+}
+
+$form['Donation1'] = array(
+'#markup' => '<div class="responsive_table"><label>Donation</label><table id="myTableedit" class=" table order-list-edit">
+    <thead>
+        <tr>
+            <th>Donation</th>
+            <th>Monetary Value</th>
+            <th>Comment</th>
+            <th>Operation</th>
+        </tr>
+    </thead>
+    <tbody>
+'.$donation_data.'
+    </tbody>
+    </table>
+'
+);
+
+
+$form['donatio_table'] = array(
+ '#markup' => '</tbody></table></div>
+    <div id="addrowedit" class="button button_addmore"><input type="button" class="btn btn-lg btn-block add_more_btn"  value="Add More field" /></div>',
+  );
+
+if(isset($item->Attachments_fid) && $item->Attachments_fid!=''){
+  $upload_ids=unserialize($item->Attachments_fid);
+}//echo "<pre>";print_r($upload_ids);die;
+
+
+
+$form['Attachments-title'] = array(
+  '#markup' => ''
+  );
+
+
+$form['Attachments_files'] = array(
+  '#prefix' => '<div class="responsive_table"><label>Attachment</label>
+    <table id="myTable2" class="table order-list-att">
+      <tr><th>' . t('Attachments') . '</th><th>' . t('Comments') . '</th></tr>'.'<tr><td class="table_heading"> 
+    ',
+);
+
+if(isset($upload_ids['upload_id']) && count($upload_ids['upload_id'])>0){
+  
+  foreach($upload_ids['upload_id'] as $uploadId){
+    $fid=$uploadId;
+    $file_upload_details = db_query("SELECT * FROM {file_managed} WHERE fid = ".$fid)->fetchAll();
+     
+    $fURI=$file_upload_details[0]->uri;
+    $fname=$file_upload_details[0]->filename;
+    $fileURI=file_create_url($fURI);
+    if($fname!=""){
+        $form['Attachments_fid'.$uploadId] =  array(
+          '#markup' => t('<div class="upload_data"><a href='.$fileURI.'><i class="fa fa-cloud-download" aria-hidden="true"></i>
+ '.$fname.'</a></div>'),
+         );
+        }
+   }
+    
+}
+
+$form['Attachments_fid'] =  array(
+    '#type' => 'managed_file_multiple',
+    '#title' => 'Upload files',
+    '#upload_validators' => array('file_validate_extensions' => array('pdf doc docx ')),
+    '#upload_location' => 'public://capacity_documents/',
+    //'#description' => t('<a href='.$fileURI.'>'.$fname.'</a> <br>Please use the Choose file button to attach a response document<br><strong>Allowed extensions: pdf doc docx</strong>.'),
+  '#prefix' => '<tr><td class="table_heading">',
+    '#suffix' => '</td>',
+  );
+$form['Attachments_notes'] = array(
+  '#prefix' => '<td class="table_heading">',
+  '#type' => 'textarea',
+    '#rows' => 5,
+    '#cols' => 30, 
+  '#suffix' => '</td></tr>
+        </table></div>
+    <td colspan="5" style="text-align: left;">
+                <input style="display:none;" type="button" class="btn btn-lg btn-block " id="addrow-list" value="Add More field" />
+            </td>      
+    ', // Don't forget to close the table rows, and finally the table.
+      '#default_value' => $item->Attachments_notes,
+);
+
+ /*$form['pending_field'] = array(
+        '#type' => 'checkboxes',
+       //'#title' => t('Pending'),
+       '#options' => array('1'=>"Pending"),
+       '#attributes' => ($item->is_pending=="1")?array('checked' => 'checked'):"",
+   );*/
+
+    $form['signature'] = array(
+        '#type' => 'radios',
+       '#title' => t('Signature'),
+       '#options' => array('yes'=>"Pending",'1'=>"I certify that the information above is true, accurate and correct to the best of my knowledge. "),
+       '#required'=>TRUE,
+       '#default_value' => ($item->signature=="0")?$item->is_pending:$item->signature,
+   );
+   
+      $form['attachment_upload_id']=array(
+      '#type'=>"hidden",
+      '#value'=>$item->Attachments_fid,
+    );
+
+
+   $form['implementation_id']=array(
+      '#type'=>"hidden",
+      '#value'=>$item->implementation_id,
+    );
+
+  $form['next_btn_div_start1']=array('#markup'=>"<div class='assessment-nxt-btn implement-btn '>");
+  $form['submit'] = array
+  (
+    '#type' => 'submit',
+    '#value' => t('Update'),
+  );
+  $form['next_btn_div_end1']=array('#markup'=>"</div>");
+  
+  return $form;
+}
+
+
+
+function implementation_item_view_form($form, &$form_state, $item)
+{
+
+    $form = array();
+    $form['#tree'] = TRUE;
+    $form['#attributes']['enctype'] = 'multipart/form-data';
+    
+    drupal_set_title("Implementation View Page");
+
+  $form['#item'] = $item;
+$contributing_factor = db_query("SELECT name, name FROM {taxonomy_term_data} WHERE vid = 12")->fetchAllKeyed();
+
+    $interventions = db_query("SELECT name, name FROM {taxonomy_term_data} WHERE vid = 28")->fetchAllKeyed();
+
+
+      $query = db_select('planning_details','a');
+      $query->fields('a', array('planning_id','title'));
+      $query->orderBy('a.title','ASC');
+      $planning_lists = $query->execute()->fetchAll();
+  $planCount=0;$lmCount=0;
+      foreach($planning_lists as $plankey=>$planVal){ 
+    $plan_id=$planVal->planning_id;
+    $plan_title=$planVal->title;
+    $planning_data_lists = db_query("SELECT * FROM {planning_details} WHERE planning_id = ".$plan_id)->fetchAll();
+    
+
+    $chkSerialize = @unserialize($planning_data_lists[0]->contributing_factor);
+    if ($chkSerialize !== false) {
+      $contributingFactor=unserialize($planning_data_lists[0]->contributing_factor);
+        $interventionsCheckedItems=unserialize($planning_data_lists[0]->interventions);
+        $logicModelCount=count($contributingFactor['contributingCollection']);
+        //echo $logicModelCount."<pre>";print_r($contributingFactor);echo "<pre>";print_r($interventionsCheckedItems);die;
+      $conSelectedItems="";$intSelectedItems="";
+    //$contributingItems="";
+     $contributingItems='<div id="firstTable_'.$plankey.'" class="heading_tag">
+                <h3>'.$plan_title.' </h3>
+                <div class="select_btn" style="display:none;">
+                  <div class="form-checkboxes">
+                    <div class="form-item form-type-checkbox">
+                      <label><input id="checkAllLogicModel" type="checkbox" value="" name="contributing_factor" class="form-checkbox" onchange="checkAllRadioFunc(this,'.$planCount.')"> Select all/Select none</label>
+                    </div>
+                  </div>
+                </div>
+             </div>
+  <div class="logicmodel_inter_con" id="logicmodel_inter_con_'.$planCount.'">';
+     $planCount++;
+      $ico=1;
+      
+            
+       $unCFValues=unserialize($item->contributing_factor_models);
+       $unINValues=unserialize($item->intervention_models);//echo "<
+      
+       for($i=0;$i<$logicModelCount;$i++){
+         $ichange=$plankey.'_'.$i; 
+
+       
+        $contributingItems.='<div class="capacity_logic_section"><div id="conFactorTable_'.$i.'" class="conFactorTab">
+                            <div class="form-type-checkboxes"><label class="heading_label">Contributing Factor</label>';
+      foreach($contributing_factor as $fKey=>$fVal){ 
+          if($fVal==trim($contributingFactor['contributingCollection']['contribCollection'.$i])){ 
+        $cfCheck=($unCFValues['contributing_factor']['contributing_factor'.$ichange]==trim($contributingFactor['contributingCollection']['contribCollection'.$i]))?'checked':'';
+            $contributingItems.='<div class="form-checkboxes">
+                  <div class="form-item form-type-checkbox"><label><span> '.$fVal.'</span></label>
+                  </div>
+                </div>';
+          }
+
+      }
+      $contributingItems.='</div></div>
+      <div id="intervTable_'.$i.'" class="interventions intervTab">
+                           <div class="form-type-checkboxes"><label class="heading_label">Interventions</label>
+      ';
+
+      foreach($interventions as $cKey=>$cVal){ 
+           if(in_array($cVal,$interventionsCheckedItems['interventionCollection']['internCollection'.$i])){
+         $inCheck=(in_array($cVal,$unINValues['interventions']['interventions'.$ichange]))?'checked':'';
+            $contributingItems.='<div class="form-checkboxes">
+                                <div class="form-item form-type-checkbox"><label><input disabled="disabled" type="radio" value="'.$cVal.'" class="form-radio" name="interventions'.$ichange.'[]" '.$inCheck.'><span> '.$cVal.' </span></label></div>
+                     </div>';
+           }
+
+      }
+      
+      $contributingItems.='</div></div></div>';
+      
+      //$contributingItems.='</table>';
+      
+        #--------------------------------------
+        # create a "planning logic model" fieldset
+        #--------------------------------------
+        $form['planningLogicModel'.$plankey] = array(
+        '#type' => 'fieldset',
+        '#title' => t($plan_title),
+        '#collapsible' => TRUE,
+        '#collapsed' => ($plankey=="0")?FALSE:TRUE,
+        );
+         
+      $ico++;
+
+
+}  
+
+  $contributingItems.='</div></table>';
+    $form['planningLogicModel'.$plankey]['contributing_intervention'.$plankey] =array(
+    "#title"  => 'Logic model',
+    "#markup"=> $contributingItems
+    );
+    
+    $form['table_count_id']=array(
+      '#type'=>"hidden",
+      '#value'=>($logicModelCount-1),
+      '#attributes'=>array("id"=>"LogicModelCountId")
+    );
+        
+        
+        //echo "<pre>";print_r($contributingFactor);echo "<pre>";print_r($interventionsCheckedItems);die;
+    } else {
+      $ichange=$plankey.'_'.$lmCount;
+       $unCFValues=unserialize($item->contributing_factor_models);
+       $unINValues=unserialize($item->intervention_models);//echo "<pre>";print_r($unINValues);die;
+      
+      $contributingFactor=$planning_data_lists[0]->contributing_factor;
+      $interventionsCheckedItems=explode(",",$planning_data_lists[0]->interventions);
+      
+      $contributingItems="";
+    foreach($contributing_factor as $fKey=>$fVal){
+        if($contributingFactor==$fVal){ //echo $unCFValues['contributing_factor']['contributing_factor'.$ichange]."-->".$contributingFactor;die;
+      $cfCheck=($unCFValues['contributing_factor']['contributing_factor'.$ichange]==$contributingFactor)?'checked':'';
+          $contributingItems.='<div class="form-checkboxes">
+                  <div class="form-item form-type-checkbox"><label><span> '.$fVal.' </span></label>
+                  </div>
+                </div>';
+        }
+    }
+
+    $interventionsItems="";
+    foreach($interventions as $cKey=>$cVal){ //echo $cVal."<pre>";print_r($interventionsCheckedItems);die;
+         if(in_array($cVal,$interventionsCheckedItems)){
+       $inCheck=(in_array($cVal,$unINValues['interventions']['interventions'.$ichange]))?'checked':'';
+          $interventionsItems.='<div class="form-checkboxes">
+                  <div class="form-item form-type-checkbox"><label><input disabled="disabled" type="radio" value="'.$cVal.'" class="form-radio" name="interventions[]" '.$inCheck.'><span> '.$cVal.' </span></label>
+                  </div>
+                </div>';
+         }
+    }
+        #--------------------------------------
+        # create a "planning logic model" fieldset
+        #--------------------------------------
+        $form['planningLogicModel'.$plankey] = array(
+        '#type' => 'fieldset',
+        '#title' => t($plan_title),
+        '#collapsible' => TRUE,
+        '#collapsed' => ($plankey=="0")?FALSE:TRUE,
+        );
+
+    $form['planningLogicModel'.$plankey]['contributing_intervention'.$plankey] =array(
+    "#title"  => 'Logic model',
+      "#markup"=> '
+      <div id="firstTable'.$plankey.'" class="heading_tag">
+      <h3>'.$plan_title.' </h3>
+      <div class="select_btn" style="display:none;">
+       <div class="form-checkboxes">
+        <div class="form-item form-type-checkbox">
+          <label><input id="checkAllLogicModel" type="checkbox" value="" class="form-checkbox" name="contributing_factor" onchange="checkAllRadioFunc(this,'.$planCount.')"> Select all/Select none</label>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="logicmodel_inter_con" id="logicmodel_inter_con_'.$planCount.'">
+          <div class="capacity_logic_section">
+               <div id="conFactorTab" class="conFactorTab">
+          <div class="form-type-checkboxes">
+            <label class="heading_label">Contributing Factor</label>
+                            '.$contributingItems.'
+                    </div>
+        </div>
+        <div id="intervTab" class="interventions intervTab">
+          <div class="form-type-checkboxes">
+            <label class="heading_label">Interventions</label>
+                           '.$interventionsItems.'
+                    </div>
+        </div>
+            </div>
+        </div>
+</table>');
+
+    $form['table_count_id']=array(
+      '#type'=>"hidden",
+      '#value'=>0,
+      '#attributes'=>array("id"=>"LogicModelCountId")
+    );
+    
+    $planCount++;
+    $lmCount++;
+      
+    }
+
+}
+
+
+
+$all_user_lists = entity_load('user');
+
+$all_user_details = json_decode(json_encode($all_user_lists), true);
+   
+   if(isset($item->personConductingContent)){
+    $personConduct_id_arr=unserialize($item->personConductingContent);
+   }
+   //echo "<pre>";print_r($personConduct_id_arr);die;
+   
+   
+   $form['personConducting']=array('#markup'=>'<div class="responsive_table"><h5>Person Conducting</h5><table id="personConductingTab" class="sticky-enabled table-select-processed">
+ <thead><tr><th>First Name</th><th>Last Name</th><th>Email</th><th>Cell phone</th> </tr></thead>
+<tbody>');
+  $usersRow='';
+  foreach($all_user_details as $usersList){ //echo "<pre>";print_r($usersList);die;
+      if($usersList['uid']!="0" && isset($usersList['roles'][7]) && $usersList['roles'][7]=="Staff User"){
+        
+        $last_name_staff = db_query("SELECT field_last_name_value FROM field_data_field_last_name WHERE entity_id =".$usersList['uid'])->fetchField();
+        $cell_phone = db_query("SELECT field_cell_phone_value FROM field_data_field_cell_phone WHERE entity_id =".$usersList['uid'])->fetchField();
+        if(in_array($usersList['uid'],$personConduct_id_arr['person_conducting'])){
+        $personChkVal=(in_array($usersList['uid'],$personConduct_id_arr['person_conducting']))?'checked="checked"':'';
+        $usersRow.='<tr class="odd"><td class="Member-hide" style="display:none"><div class="form-item form-type-checkbox form-item-person-conducting-0">
+                <input id="edit-person-conducting-0" name="person_conducting[]" value="'.$usersList['uid'].'"class="form-checkbox"  type="checkbox" '.$personChkVal.'>
+              </div>
+              </td><td>'.(($usersList['name']!="")?$usersList['name']:"").'</td><td>'.(($last_name_staff!="")?$last_name_staff:"").'</td> 
+              <td>'.(($usersList['mail']!="")?$usersList['mail']:"").'</td><td>'.(($cell_phone!="")?$cell_phone:"").'</td></tr>';
+            }
+      }
+    
+  }
+
+
+  
+   $form['personConductingContent']=array('#markup'=>$usersRow,
+
+   '#default_value' => $item->personConductingContent,
+
+    );
+     
+   $form['personConductingEnd']=array('#markup'=>'</tbody></table></div>');
+   
+
+       if(isset($item->startdatetime) && $item->startdatetime!=''){
+    $startdatetime=$item->startdatetime;
+}
+
+$form['startdatetime'] = array(
+  '#markup' => '<div class="capacity_view_details1"><h5>Start date</h5><p>'.$startdatetime.'</p></div>',
+   '#default_value' => $item->startdatetime,
+  );
+
+    if(isset($item->enddatetime) && $item->enddatetime!=''){
+    $enddatetime=$item->enddatetime;
+}
+
+$form['enddatetime'] = array(
+  '#markup' => '<div class="capacity_view_details1"><h5>End date</h5><p>'.$enddatetime.'</p></div>',
+   '#default_value' => $item->enddatetime,
+  );
+
+    if(isset($item->Length_of_services) && $item->Length_of_services!=''){
+    $Length_of_services=$item->Length_of_services;
+}
+$form['Length_of_services'] = array(
+  '#markup' => '<div class="capacity_view_details1"><h5>Length of services</h5><p>'.$Length_of_services.'</p></div>',
+   '#default_value' => $item->Length_of_services,
+  );
+    if(isset($item->location) && $item->location!=''){
+    $location=$item->location;
+}
+
+$form['location'] = array(
+  '#markup' => '<div class="capacity_view_details1"><h5>Location</h5><p>'.$location.'</p></div>',
+   '#default_value' => $item->location,
+  );
+
+
+    if(isset($item->address_1) && $item->address_1!=''){
+    $address_1=$item->address_1;
+}
+$form['address_1'] = array(
+  '#markup' => '<div class="capacity_view_details1"><h5>Address 1 </h5><p class="multi_line">'.$address_1.'</p></div>',
+   '#default_value' => $item->address_1,
+  );
+    if(isset($item->address_2) && $item->address_2!=''){
+    $address_2=$item->address_2;
+}
+$form['address_2'] = array(
+  '#markup' => '<div class="capacity_view_details1"><h5>Address 2 </h5><p class="multi_line">'.$address_2.'</p></div>',
+  );
+
+    if(isset($item->city) && $item->city!=''){
+    $city=$item->city;
+}
+
+      $form['city'] =array(
+     '#markup' => '<div class="capacity_view_details1"><h5>City</h5><p>'.$city.'</p></div>',
+  );
+
+    if(isset($item->states) && $item->states!=''){
+    $states=$item->states;
+}
+      $form['states'] =array(
+     '#markup' => '<div class="capacity_view_details1"><h5>State</h5><p>'.$states.'</p></div>',
+  );
+
+    if(isset($item->zip_code) && $item->zip_code!=''){
+    $zip_code=$item->zip_code;
+}
+      $form['zip_code'] =array(
+     '#markup' => '<div class="capacity_view_details1"><h5>Zip code</h5><p>'.$zip_code.'</p></div>',
+  );
+
+
+    if(isset($item->number_adult_served) && $item->number_adult_served!=''){
+    $number_adult_served=$item->number_adult_served;
+}
+
+     $form['number_adult_served'] =array(
+     '#markup' => '<div class="capacity_view_details1"><h5>Number of adult served</h5><p>'.$number_adult_served.'</p></div>',
+  );
+
+    if(isset($item->number_youth_served) && $item->number_youth_served!=''){
+    $number_youth_served=$item->number_youth_served;
+}
+     $form['number_youth_served'] =array(
+     '#markup' => '<div class="capacity_view_details1"><h5>Number of youth served</h5><p>'.$number_youth_served.'</p></div>',
+  );
+   
+       if(isset($item->description_of_purpose) && $item->description_of_purpose!=''){
+    $description_of_purpose=$item->description_of_purpose;
+}
+
+     $form['description_of_purpose'] =array(
+     '#markup' => '<div class="capacity_view_details1"><h5>Description of purpose</h5><p class="multi_line">'.$description_of_purpose.'</p></div>',
+  );
+       if(isset($item->description_of_outcome) && $item->description_of_outcome!=''){
+    $description_of_outcome=$item->description_of_outcome;
+}
+    $form['description_of_outcome'] =array(
+     '#markup' => '<div class="capacity_view_details1"><h5>Description of outcome</h5><p class="multi_line">'.$description_of_outcome.'</p></div>',
+  );
+
+
+
+// prerson conducting activities
+
+   if(isset($item->Members_Invloved)){
+    $members_id_arr=unserialize($item->Members_Invloved);
+   }
+  //echo "<pre>";print_r($item);die;
+   $form['membersInvolvedStart']=array('#markup'=>'<div class="responsive_table"><h5>Members Involved</h5><table id="membersInvolvedTab" class="sticky-enabled table-select-processed">
+ <thead><tr><th>First Name</th><th>Last Name</th><th>Email</th><th>Cell phone</th><th>Company organization</th> </tr></thead>
+<tbody>');
+
+  $membersRow='';
+  foreach($all_user_details as $membersList){ //echo "<pre>";print_r($membersList);die;
+
+
+      if($membersList['uid']!="0" && $membersList['roles'][7]!="Staff User"){
+
+
+        $last_name_staff = db_query("SELECT field_last_name_value FROM field_data_field_last_name WHERE entity_id =".$membersList['uid'])->fetchField();//echo $last_name_staff."<pre>";print_r($usersList);die;
+
+
+        $cell_phone = db_query("SELECT field_cell_phone_value FROM field_data_field_cell_phone WHERE entity_id =".$membersList['uid'])->fetchField();
+
+        $org_name = db_query("SELECT field_company_organization_value FROM field_data_field_company_organization WHERE entity_id =".$membersList['uid'])->fetchField();
+
+
+        if(in_array($membersList['uid'],$members_id_arr['Members_Invloved'])){
+        $memChkVal=(in_array($membersList['uid'],$members_id_arr['Members_Invloved']))?'checked="checked"':'';
+
+        $membersRow.='<tr class="odd"><td class="Member-hide" style="display:none"><div class="form-item form-type-checkbox form-item-person-conducting-0">
+                <input id="edit-person-conducting-0" name="Members_Invloved[]" value="'.$membersList['uid'].'" class="form-checkbox" type="checkbox" '.$memChkVal.'>
+              </div>
+              </td><td>'.$membersList['name'].'</td><td>'.(($last_name_staff!="")?$last_name_staff:"").'</td><td>'.$membersList['mail'].'</td>
+              <td>'.(($cell_phone!="")?$cell_phone:"").'</td><td>'.(($org_name!="")?$org_name:"").'</td></tr>';
+            }
+      }
+    
+  }
+
+  
+   $form['Members_Invloved']=array('#markup'=>$membersRow);
+     
+   $form['membersInvolvedEnd']=array('#markup'=>'</tbody></table></div>');
+   
+
+
+if(isset($item->Donation_select) && $item->Donation_select!=''){
+    $Donation_select_id=$item->Donation_select;
+}
+
+$Donation_data = unserialize($Donation_select_id);
+
+if(isset($item->Monetary_Value) && $item->Monetary_Value!=''){
+    $Monetary_Value_id=$item->Monetary_Value;
+}
+
+$Monetary_Value_data = unserialize($Monetary_Value_id);
+
+if(isset($item->Comment) && $item->Comment!=''){
+    $Comment_id=$item->Comment;
+}
+
+$Comment_data = unserialize($Comment_id);
+
+if(isset($Donation_data['Donation_select']) && count($Donation_data['Donation_select'])>0){
+
+$donation_view_data="";
+
+foreach ($Donation_data['Donation_select'] as $key => $value){
+      $donation_view_data.="<tr><td>".$value."</td>";
+      $donation_view_data.="<td>".$Monetary_Value_data['Monetary_Value'][$key]."</td>";
+      $donation_view_data.="<td>".$Comment_data['Comment'][$key]."</td><tr>";
+  
+}
+}
+
+//print_r($Donation_data);die();
+$form['Donation1'] = array(
+'#markup' => '<div class="responsive_table"><h5>Donation</h5><table id="myTable" class=" table order-list">
+    <thead>
+        <tr>
+            <th>Donation</th>
+            <th>Monetary Value</th>
+            <th>Comment</th>
+        </tr>
+    </thead>
+    <tbody>
+    '.$donation_view_data.'
+    </tbody>
+    </table></div>
+'
+);
+
+
+if(isset($item->Attachments_fid) && $item->Attachments_fid!=''){
+  $upload_ids=unserialize($item->Attachments_fid);
+}//echo "<pre>";print_r($upload_ids);die;
+
+
+
+$form['Attachments-title'] = array(
+  '#markup' => ''
+  );
+
+
+
+$form['Attachments_files'] = array(
+  '#prefix' => '<div class="responsive_table"><h5>Attachment</h5>
+    <table id="myTable2" class=" table order-list-att">
+      <tr><th>' . t('Attachments') . '</th><th>' . t('Comments') . '</tr></th>'.'<tr><td class="table_heading"> 
+    ',
+);
+
+if(isset($upload_ids['upload_id']) && count($upload_ids['upload_id'])>0){
+  
+  foreach($upload_ids['upload_id'] as $uploadId){
+    $fid=$uploadId;
+    $file_upload_details = db_query("SELECT * FROM {file_managed} WHERE fid = ".$fid)->fetchAll();
+     
+    $fURI=$file_upload_details[0]->uri;
+    $fname=$file_upload_details[0]->filename;
+    $fileURI=file_create_url($fURI);
+    
+    if($fname!=""){
+    
+      $form['Attachments_fid'.$uploadId] =  array(
+        '#markup' => t('<div class="upload_data"><a href='.$fileURI.'> <i class="fa fa-cloud-download" aria-hidden="true"></i> '.$fname.'</a> </div>'),
+        );
+       }
+   }
+    
+}
+    if(isset($item->Attachments_notes) && $item->Attachments_notes!=''){
+    $Attachments_notes=$item->Attachments_notes;
+  }
+$form['Attachments_notes'] = array(
+  '#markup' => '<td class="col-sm-3">'.$Attachments_notes.'</td></tr>
+        </table>  </div>   
+    ',
+);
+
+    /*$form['pending_field'] = array(
+        '#type' => 'checkboxes',
+       '#options' => array('1'=>"Pending"),
+       '#required'=>TRUE,
+       //'#attributes' => array('checked' => 'checked','disabled'=>'disabled'),
+       '#attributes' => ($item->is_pending=="1")?array('checked' => 'checked','disabled'=>'disabled'):array('disabled'=>'disabled'),
+   );*/
+   
+    $form['signature'] = array(
+        '#type' => 'radios',
+       '#title' => t('Signature'),
+       '#options' => array('yes'=>"Pending",'1'=>"I certify that the information above is true, accurate and correct to the best of my knowledge. "),
+       '#required'=>TRUE,
+       '#default_value' => ($item->signature=="0")?$item->is_pending:$item->signature,
+        '#attributes' => array('disabled'=>'disabled'),
+   );
+   
+
+  return $form;
+}
+
+
+
+function  implementation_item_form_validate($form, &$form_state)  {
+  $file1 = file_save_upload('file1');
+  if (isset($file1)) {
+    // File upload was attempted.
+    if ($file1) {
+      // The temporary file should be put in form_values so we can save it on submit.
+      $form_state['values']['file1_upload'] = $file1;
+    }
+    else {
+      // File upload failed.
+      form_set_error('file1', t('The file cannot be uploaded.'));
+    }
+  }
+}
+
+
+function implementation_edit_item_form_submit($form, &$form_state)
+{
+  
+  $query = db_select('planning_details','a');
+      $query->fields('a', array('planning_id','title'));
+      $query->orderBy('a.title','ASC');
+      $planning_lists = $query->execute()->fetchAll();
+    $lmCount=0;
+      foreach($planning_lists as $plankey=>$planVal){ 
+        $plan_id=$planVal->planning_id;
+        $planning_data_lists = db_query("SELECT * FROM {planning_details} WHERE planning_id = ".$plan_id)->fetchAll();
+      $chkSerialize = @unserialize($planning_data_lists[0]->contributing_factor);
+      if ($chkSerialize !== false) { 
+        $contributingFactor=unserialize($planning_data_lists[0]->contributing_factor);
+                $interventionsCheckedItems=unserialize($planning_data_lists[0]->interventions);
+        $logicModelCount=count($contributingFactor['contributingCollection']);
+         for($i=0;$i<$logicModelCount;$i++){
+           if(isset($_REQUEST['contributing_factor'.$plankey.'_'.$i])){
+            $cfLogicModels['contributing_factor'.$plankey.'_'.$i]=$_REQUEST['contributing_factor'.$plankey.'_'.$i];
+             }
+           for($inv=0;$inv<count($_REQUEST['interventions'.$plankey.'_'.$i]);$inv++){
+             if(isset($_REQUEST['interventions'.$plankey.'_'.$i])){
+              $inLogicModels['interventions'.$plankey.'_'.$i]=$_REQUEST['interventions'.$plankey.'_'.$i];
+              }
+             }
+         }
+        
+      }else{ 
+           if(isset($_REQUEST['contributing_factor'.$plankey.'_'.$lmCount])){
+             $cfLogicModels['contributing_factor'.$plankey.'_'.$lmCount]=$_REQUEST['contributing_factor'.$plankey.'_'.$lmCount];
+           }
+           for($inv=0;$inv<count($_REQUEST['interventions'.$plankey.'_'.$lmCount]);$inv++){
+             if(isset($_REQUEST['interventions'.$plankey.'_'.$lmCount])){
+              $inLogicModels['interventions'.$plankey.'_'.$lmCount]=$_REQUEST['interventions'.$plankey.'_'.$lmCount];
+               }
+             }
+        $lmCount++;
+      }
+        
+      }
+      $conArrModels['contributing_factor']=$cfLogicModels;
+      $invArrModels['interventions']=$inLogicModels;
+  
+$person_conducting="";
+if(count($_REQUEST['person_conducting'])>0){
+for($i=0;$i<count($_REQUEST['person_conducting']);$i++){
+ $person_conducting['person_conducting'][$i]=$_REQUEST['person_conducting'][$i];
+}
+}
+$person_conductin_data=serialize($person_conducting);
+
+
+$person_conducting="";
+if(count($_REQUEST['person_conducting'])>0){
+for($i=0;$i<count($_REQUEST['person_conducting']);$i++){
+ $person_conducting['person_conducting'][$i]=$_REQUEST['person_conducting'][$i];
+}
+}
+$person_conductin_data=serialize($person_conducting);
+
+
+  if(isset($_REQUEST['attachment_upload_id']) && $_REQUEST['attachment_upload_id']!=''){
+    $already_upload_ids=unserialize($_REQUEST['attachment_upload_id']);
+    
+  }
+  if(isset($_REQUEST['Attachments_fid']['files']) && count($_REQUEST['Attachments_fid']['files'])>0){
+    if(isset($already_upload_ids['upload_id']) && count($already_upload_ids['upload_id'])>0) { 
+      $ui=count($already_upload_ids['upload_id']);
+      }else{
+      $ui=0;
+    }
+    foreach($_REQUEST['Attachments_fid']['files'] as $uploadId=>$uploadVal ){
+      $file_upload_ids['upload_id'][$ui]=$uploadId;
+      $ui++;
+    }
+  }else{
+     $file_upload_ids['upload_id']=$file_upload_ids['upload_id'];  
+  }
+  
+  if(isset($already_upload_ids['upload_id']) && count($already_upload_ids['upload_id'])>0){
+  $file_upload_ids['upload_id']=array_merge($already_upload_ids['upload_id'],$file_upload_ids['upload_id']);
+  }else{
+  $file_upload_ids['upload_id']=$file_upload_ids['upload_id'];  
+  }
+  
+  if(!isset($_REQUEST['Attachments_fid']['files'])){
+    $file_upload_ids=$already_upload_ids;
+  }
+   
+  
+
+
+$Members_Invloved="";
+if(count($_REQUEST['Members_Invloved'])>0){
+for($i=0;$i<count($_REQUEST['Members_Invloved']);$i++){
+ $Members_Invloved['Members_Invloved'][$i]=$_REQUEST['Members_Invloved'][$i];
+}
+}
+$members_invloved_data=serialize($Members_Invloved);
+
+$counts = $_REQUEST['hidden_field']; 
+
+
+$Donation_select=$Monetary_Value=$Comment=array();
+if(count($_REQUEST['Donation_select'])>0){
+$i = 0;
+foreach ($_REQUEST['Donation_select'] as $keyz => $valuez) {
+    $Donation_select['Donation_select'][$i]=$valuez;
+    $Monetary_Value['Monetary_Value'][$i]=$_REQUEST['Monetary_Value'][$keyz];
+    $Comment['Comment'][$i]=$_REQUEST['Comment'][$keyz];
+    $i++;
+  }
+}
+$Donation_select_data=serialize($Donation_select);
+$Monetary_Value_data=serialize($Monetary_Value);
+$Comment_data=serialize($Comment);
+
+
+if(isset($_REQUEST['implementation_id']) && $_REQUEST['implementation_id']!='')
+  {
+     $implementationId= $_REQUEST['implementation_id'];
+       db_update('implementation_details')
+    ->fields(array(
+      'contributing_factor_models' => serialize($conArrModels),
+      'intervention_models' => serialize($invArrModels),
+      'personConductingContent' => $person_conductin_data,
+      'startdatetime' => $form_state['values']['startdatetime'],
+      'enddatetime' => $form_state['values']['enddatetime'],
+      'Length_of_services' => $form_state['values']['Length_of_services'],
+      'location' => $form_state['values']['location'],
+      'country' => $form_state['values']['Country'],
+      'address_1' => $form_state['values']['address_1'],
+      'address_2' => $form_state['values']['address_2'],
+      'city' => $form_state['values']['city'],
+      'states' => $form_state['values']['states'],
+      'zip_code' => $form_state['values']['zip_code'],
+      'number_adult_served' => $form_state['values']['number_adult_served'],
+      'number_youth_served' => $form_state['values']['number_youth_served'],
+      'description_of_purpose' => $form_state['values']['description_of_purpose'],
+      'description_of_outcome' => $form_state['values']['description_of_outcome'],
+      'Members_Invloved' => $members_invloved_data,
+      'Donation_select' => $Donation_select_data,
+      'Monetary_Value' => $Monetary_Value_data,
+      'Comment' => $Comment_data,
+      'Attachments_fid' => (isset($file_upload_ids) && count($file_upload_ids)>"0")?serialize($file_upload_ids):"",
+      'Attachments_notes' => $form_state['values']['Attachments_notes'],
+       'is_pending' => ($form_state['values']['signature']=="yes")?$form_state['values']['signature']:"no",
+       'signature' => ($form_state['values']['signature']=="1")?$form_state['values']['signature']:"0",
+      )
+    )
+    ->condition('implementation_id', $implementationId)
+    ->execute();
+    $form_state['redirect'] = 'implementation/'.$implementationId.'/view';
+  }
+  else
+  {
+  drupal_set_message('No data');
+  }
+}
+
+
+function implementation_item_form_submit($form, &$form_state)
+{
+  
+   $query = db_select('planning_details','a');
+      $query->fields('a', array('planning_id','title'));
+      $query->orderBy('a.title','ASC');
+      $planning_lists = $query->execute()->fetchAll();
+              $lmCount=0;
+      foreach($planning_lists as $plankey=>$planVal){ 
+        $plan_id=$planVal->planning_id;
+        $planning_data_lists = db_query("SELECT * FROM {planning_details} WHERE planning_id = ".$plan_id)->fetchAll();
+      $chkSerialize = @unserialize($planning_data_lists[0]->contributing_factor);
+      if ($chkSerialize !== false) { 
+        $contributingFactor=unserialize($planning_data_lists[0]->contributing_factor);
+                $interventionsCheckedItems=unserialize($planning_data_lists[0]->interventions);
+        $logicModelCount=count($contributingFactor['contributingCollection']);
+         for($i=0;$i<$logicModelCount;$i++){
+           if(isset($_REQUEST['contributing_factor'.$plankey.'_'.$i])){
+            $cfLogicModels['contributing_factor'.$plankey.'_'.$i]=$_REQUEST['contributing_factor'.$plankey.'_'.$i];
+             }
+           for($inv=0;$inv<count($_REQUEST['interventions'.$plankey.'_'.$i]);$inv++){
+             if(isset($_REQUEST['interventions'.$plankey.'_'.$i])){
+              $inLogicModels['interventions'.$plankey.'_'.$i]=$_REQUEST['interventions'.$plankey.'_'.$i];
+              }
+             }
+         }
+        
+      }else{ 
+           if(isset($_REQUEST['contributing_factor'.$plankey.'_'.$lmCount])){
+             $cfLogicModels['contributing_factor'.$plankey.'_'.$lmCount]=$_REQUEST['contributing_factor'.$plankey.'_'.$lmCount];
+           }
+           for($inv=0;$inv<count($_REQUEST['interventions'.$plankey.'_'.$lmCount]);$inv++){
+             if(isset($_REQUEST['interventions'.$plankey.'_'.$lmCount])){
+              $inLogicModels['interventions'.$plankey.'_'.$lmCount]=$_REQUEST['interventions'.$plankey.'_'.$lmCount];
+               }
+             }
+        $lmCount++;
+      }
+        
+      }//echo "<pre>";print_r($inLogicModels);die;
+      $conArrModels['contributing_factor']=$cfLogicModels;
+      $invArrModels['interventions']=$inLogicModels;
+
+      
+$person_conducting="";
+if(count($_REQUEST['person_conducting'])>0){
+for($i=0;$i<count($_REQUEST['person_conducting']);$i++){
+ $person_conducting['person_conducting'][$i]=$_REQUEST['person_conducting'][$i];
+}
+}
+$person_conductin_data=serialize($person_conducting);
+
+
+  if(isset($_REQUEST['Attachments_fid']['files']) && count($_REQUEST['Attachments_fid']['files'])>0){
+    $ui=0;
+    foreach($_REQUEST['Attachments_fid']['files'] as $uploadId=>$uploadVal ){
+      $file_upload_ids['upload_id'][$ui]=$uploadId;
+      $ui++;
+    }
+  }
+
+
+$Members_Invloved="";
+if(count($_REQUEST['Members_Invloved'])>0){
+for($i=0;$i<count($_REQUEST['Members_Invloved']);$i++){
+ $Members_Invloved['Members_Invloved'][$i]=$_REQUEST['Members_Invloved'][$i];
+}
+}
+$members_invloved_data=serialize($Members_Invloved);
+
+$counts = $_REQUEST['hidden_field']; 
+
+
+$Donation_select=$Monetary_Value=$Comment=array();
+if(count($_REQUEST['Donation_select'])>0){
+$i = 0;
+foreach ($_REQUEST['Donation_select'] as $keyz => $valuez) {
+    $Donation_select['Donation_select'][$i]=$valuez;
+    $Monetary_Value['Monetary_Value'][$i]=$_REQUEST['Monetary_Value'][$keyz];
+    $Comment['Comment'][$i]=$_REQUEST['Comment'][$keyz];
+    $i++;
+  }
+}
+$Donation_select_data=serialize($Donation_select);
+$Monetary_Value_data=serialize($Monetary_Value);
+$Comment_data=serialize($Comment);
+
+
+    $implementation_id = db_insert('implementation_details')
+
+    ->fields(array(
+      'contributing_factor_models' => serialize($conArrModels),
+      'intervention_models' => serialize($invArrModels),
+      'personConductingContent' => $person_conductin_data,
+      'startdatetime' => $form_state['values']['startdatetime'],
+      'enddatetime' => $form_state['values']['enddatetime'],
+      'Length_of_services' => $form_state['values']['Length_of_services'],
+      'location' => $form_state['values']['location'],
+      'country' => $form_state['values']['Country'],
+      'address_1' => $form_state['values']['address_1'],
+      'address_2' => $form_state['values']['address_2'],
+      'city' => $form_state['values']['city'],
+      'states' => $form_state['values']['states'],
+      'zip_code' => $form_state['values']['zip_code'],
+      'number_adult_served' => $form_state['values']['number_adult_served'],
+      'number_youth_served' => $form_state['values']['number_youth_served'],
+      'description_of_purpose' => $form_state['values']['description_of_purpose'],
+      'description_of_outcome' => $form_state['values']['description_of_outcome'],
+      'Members_Invloved' => $members_invloved_data,
+       'Donation_select' => $Donation_select_data,
+      'Monetary_Value' => $Monetary_Value_data,
+      'Comment' => $Comment_data,
+      //'Attachments_fid' => $_REQUEST['Attachments_fid'],
+      'Attachments_fid' => (isset($file_upload_ids) && count($file_upload_ids)>"0")?serialize($file_upload_ids):"",
+      'Attachments_notes' => $form_state['values']['Attachments_notes'],
+       'is_pending' => ($form_state['values']['signature']=="yes")?$form_state['values']['signature']:"no",
+       'signature' => ($form_state['values']['signature']!="yes")?$form_state['values']['signature']:"0",
+      )
+    )
+    ->execute();
+    $form_state['redirect'] = 'implementation/list';
+}
+
+
+function implementation_view_list_item_page($item)
+{
+     global $user;
+  $base_url=$GLOBALS['base_url'];
+  $query = db_select('implementation_details','a');
+  $query->fields('a', array('implementation_id','is_pending'));
+  $query->orderBy('a.implementation_id','ASC');
+  $capacity_data_lists = $query->execute()->fetchAll();
+  
+  $capacityListItems="<div id='capacityDataLists'>
+          <h3>Implementation Records</h3>
+      <ul>";
+      $record_meeting_img = file_create_url(path_to_theme().'/images/doctor.png');
+  if(isset($capacity_data_lists) && count($capacity_data_lists)>0){ 
+      foreach($capacity_data_lists as $dataKey=>$dataItem){ 
+      if($dataItem->implementation_id!=''){
+      if($dataItem->is_pending=="yes"){ $is_pendingTxt="Pending"; }else{ $is_pendingTxt=""; }
+        $capacityListItems .='<li><div class="planning_list"><p>
+    <img src='.$record_meeting_img.' class="white_img">
+    <span>ID '.$dataItem->implementation_id.'</span>
+    <span>'.$is_pendingTxt.'</span></p>
+    <a href="'.$base_url.'/implementation/'.$dataItem->implementation_id.'/view"><i class="fa fa-eye fa-lg" aria-hidden="true"></i></a> 
+    <a href="'.$base_url.'/implementation/'.$dataItem->implementation_id.'/edit"><i class="fa fa-pencil-square fa-lg" aria-hidden="true"></i></a></div></li>';
+        }
+      }
+  }else{
+    $capacityListItems.='<tr><td colspan="3">No Implementation list found.</td></tr>';     
+  }
+  $capacityListItems.="</ul></div>";
+  
+    $record_meeting_icon1 = file_create_url(path_to_theme().'/images/new_icon.png');
+     $capacityListItems.='<div class="capacity-nxt-btn"><a href="add"><img src='.$record_meeting_icon1.' class="white_img"><span>Create New Implementation</span></a></div><br><br>';
+  
+   return $capacityListItems;
+}
+
+?>

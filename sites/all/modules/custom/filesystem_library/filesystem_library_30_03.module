@@ -1,0 +1,171 @@
+<?php
+
+/**
+ * Implementation of hook_menu
+ */
+function filesystem_library_menu() {
+    $menu = array();
+
+    $menu['file_system_library'] = array
+    (
+      'title' => 'Library / Filesystem',
+      'page callback' => 'drupal_get_form',
+      'page arguments' => array('capacity_file_list_form', 1),
+      'access arguments' => array('filelist mymodule items'),
+        'access callback' => TRUE,
+      //'type' => MENU_LOCAL_TASK,
+    );
+
+    $menu['file_system_library/delete'] = array(
+        'title' => 'Delete Files',
+        'page callback' => 'drupal_get_form',
+        'page arguments' => array('file_system_delete_item_form',1) ,
+        'access arguments' => array('Delete Contact items') ,
+        'access callback' => true,
+    );
+
+    return $menu;
+}
+/**
+ * [estar get all contacts list]
+ * @param  [type] $node [description]s
+ * @return [type]       [description]
+ */
+
+ function capacity_file_list_form(){
+     $base_url = $GLOBALS['base_url'];
+   //$file_upload_details = db_query("SELECT * FROM {file_managed}")->fetchAll();
+   $imp_upload_details = db_query("SELECT Strategies,Attachments_fid FROM {implementation_details}")->fetchAll();
+   $cap_upload_details = db_query("SELECT Record,Attachments_fid FROM {capacity_details}")->fetchAll();
+   //echo "<pre>";print_r($cap_upload_details);die;
+
+   $form['fileSystem'] = array(
+       '#markup' => '<div class="responsive_table">
+       <table id="fileSystemTab" class="sticky-enabled table-select-processed">
+ <thead><tr>
+ <th>Title</th><th>Date Uploaded</th><th>Type</th><th>Category</th><th>Owner</th><th>Actions (download/delete)</th> </tr></thead>
+ <tbody>'
+   );
+ $format_array=array('text/plain'=>"txt",'application/pdf'=>"PDF",'application/msword'=>"DOC",'application/vnd.openxmlformats-officedocument.wordprocessingml.document'=>"DOCX",'image/png'=>"PNG",'application/msword'=>"XLS");
+   //if((isset($imp_file_upload_details) && count($imp_file_upload_details)>0) || isset($cap_file_upload_details) && count($cap_file_upload_details)>0){
+
+     if(isset($imp_upload_details) && count($imp_upload_details)>0){
+       foreach ($imp_upload_details as $impFid) {
+              if($impFid->Attachments_fid!=""){
+                    $imp_file_upload_details=unserialize($impFid->Attachments_fid);
+                    $imp_category=$impFid->Strategies;
+
+                 	foreach($imp_file_upload_details['upload_id'] as $uploadId){ //echo "<pre>";print_r($uploadId);die;
+
+                      $file_upload_details = db_query("SELECT * FROM {file_managed} WHERE fid = " . $uploadId)->fetchAll();
+                      $fURI = $file_upload_details[0]->uri;
+                      $fname = $file_upload_details[0]->filename;
+
+                         $user=user_load($file_upload_details[0]->uid);
+                         $personConducting=$user->name;
+
+                      $uploadedDate = date("F j, Y, g:i a",$file_upload_details[0]->timestamp);
+
+                     $fileType=$file_upload_details[0]->filemime;
+                     $fileExtension=$format_array[$fileType];
+                 		$fileURI=file_create_url($fURI);
+                    if($imp_category!=""){
+                        $category="Implementation ".$imp_category;
+                    }else{ $category="Implementation"; }
+                 		if($fname!=""){
+
+                       $fileListRow .= '<tr class="odd">
+                          <td>' . (($fname != "") ? $fname : "") . '</td>
+                          <td>' . (($uploadedDate != "") ? $uploadedDate : "") . '</td>
+                          <td>' . (($fileExtension != "") ? $fileExtension : "") . '</td>
+                          <td>' . (($category != "") ? $category : "") . '</td>
+                          <td>' . (($personConducting != "") ? $personConducting : "") . '</td>
+
+                          <td><a href="' .$fileURI. '"><i class="fa fa-download fa-lg" aria-hidden="true"></i></a>
+                             <a href="file_system_library/delete/'.$file_upload_details[0]->fid.'"><i class="fa fa-trash-o fa-lg del-docs" aria-hidden="true"></i></a>
+                         </td></tr>';
+
+                 			  // $form['Attachments_fid'.$fid] =  array(
+                 				//         '#markup' => t('<div class="upload_data"><a href='.$fileURI.'> <i class="fa fa-cloud-download" aria-hidden="true"></i> '.$fname.'</a> </div>'),
+                 		    // );
+                        }
+                    }
+  }
+}
+
+}
+
+/* Capacity Start */
+
+if(isset($cap_upload_details) && count($cap_upload_details)>0){
+  foreach ($cap_upload_details as $capFid) {
+         if($capFid->Attachments_fid!=""){
+               $cap_file_upload_details=unserialize($capFid->Attachments_fid);
+               $cap_category=$capFid->Record;
+
+                    foreach($cap_file_upload_details['upload_id'] as $uploadId){ //echo "<pre>";print_r($uploadId);die;
+
+                        $file_upload_details = db_query("SELECT * FROM {file_managed} WHERE fid = " . $uploadId)->fetchAll();
+                        $fURI = $file_upload_details[0]->uri;
+                        $fname = $file_upload_details[0]->filename;
+
+                        $user=user_load($file_upload_details[0]->uid);
+                        $personConducting=$user->name;
+
+                        $uploadedDate = date("F j, Y, g:i a",$file_upload_details[0]->timestamp);
+
+                       $fileType=$file_upload_details[0]->filemime;
+                       $fileExtension=$format_array[$fileType];
+                      $fileURI=file_create_url($fURI);
+                      if($cap_category!=""){
+                          $category="Capacity ".$cap_category;
+                      }else{ $category="Capacity"; }
+                      if($fname!=""){
+
+                         $fileListRow .= '<tr class="odd">
+                            <td>' . (($fname != "") ? $fname : "") . '</td>
+                            <td>' . (($uploadedDate != "") ? $uploadedDate : "") . '</td>
+                            <td>' . (($fileExtension != "") ? $fileExtension : "") . '</td>
+                            <td>' . (($category != "") ? $category : "") . '</td>
+                            <td>' . (($personConducting != "") ? $personConducting : "") . '</td>
+
+                            <td><a href="' .$fileURI. '"><i class="fa fa-download fa-lg" aria-hidden="true"></i></a>
+                               <a href="file_system_library/delete/'.$file_upload_details[0]->fid.'"><i class="fa fa-trash-o fa-lg del-docs" aria-hidden="true"></i></a>
+                           </td></tr>';
+
+                          // $form['Attachments_fid'.$fid] =  array(
+                          //         '#markup' => t('<div class="upload_data"><a href='.$fileURI.'> <i class="fa fa-cloud-download" aria-hidden="true"></i> '.$fname.'</a> </div>'),
+                          // );
+                          }
+                      }
+    }
+}}
+      $form['fileSystemContent'] = array(
+          '#markup' => $fileListRow,
+      );
+
+      $form['fileSystemEnd'] = array(
+          '#markup' => '</tbody></table></div>'
+      );
+
+   return $form;
+ }
+
+ function file_system_delete_item_form($form,&$form_state){
+     $url = (isset($_SERVER['HTTPS']) ? "https" : "http") . "://$_SERVER[HTTP_HOST]$_SERVER[REQUEST_URI]";
+      $fId= basename($url);
+      if(isset($fId) && $fId!=""){
+            $del_res = db_delete('file_managed')
+                           ->condition('fid', $fId)
+                           ->execute();
+       }
+       if(isset($del_res) && $del_res!=""){
+           drupal_goto('file_system_library');
+       }else{
+         return $form;
+       }
+
+ }
+
+
+?>

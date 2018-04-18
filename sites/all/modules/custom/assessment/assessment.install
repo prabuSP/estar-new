@@ -1,0 +1,207 @@
+<?php
+
+function assessment_schema(){
+    $schema['assessment_details'] = array(
+        'description' => 'The table for storing the assessment data.',
+        'fields' => array(
+            'assessment_id' => array(
+                'description' => 'The primary identifier for subscriber.',
+                'type' => 'serial',
+                'not null' => TRUE,
+                'unsigned' => TRUE,
+            ),
+           'uid' => array(
+                'description' => 'User Id',
+                'type' => 'int',
+                'not null' => TRUE,
+                'default' => 0,
+            ),
+            'title' => array(
+                'description' => 'Assessment Title',
+                'type' => 'varchar',
+                'length' => 255,
+                'not null' => TRUE,
+            ),
+            'metric' => array(
+                'description' => 'Metric Rate Details',
+                'type' => 'varchar',
+                'length' => 255,
+                'not null' => TRUE,
+            ),
+            'collection_period' => array(
+                'description' => 'Collection Period',
+                'type' => 'varchar',
+                'length' => 255,
+                'not null' => TRUE,
+            ),
+            'gender' => array(
+                'description' => 'Gender',
+                'type' => 'varchar',
+                'length' => 10,
+                'not null' => TRUE,
+            ),
+             'ethnicity' => array(
+                'description' => 'Ethnicity',
+                'type' => 'varchar',
+                'length' => 10,
+                'not null' => TRUE,
+            ),
+             'date_of_data' => array(
+                'description' => 'Date of Data',
+                'type' => 'varchar',
+                'length' => 255,
+                'not null' => TRUE,
+            ),
+            'substance_id' => array(
+                'description' => 'Substance Id',
+                'type' => 'int',
+                'not null' => TRUE,
+                'default' => 0,
+            ),
+            'indicator_id' => array(
+                'description' => 'Indicator Id',
+                'type' => 'int',
+                'not null' => TRUE,
+                'default' => 0,
+            ),
+            'data_source_id' => array(
+                'description' => 'Datasource Id',
+                'type' => 'int',
+                'not null' => TRUE,
+                'default' => 0,
+            ),
+            'created' => array(
+                'type' => 'int',
+                'not null' => TRUE,
+                'default' => 0,
+            ),
+        ),
+        'primary key' => array('assessment_id'),
+    );
+
+    $schema['assessment_rate_details'] = array(
+        'description' => 'The table for storing the assessment rate data.',
+        'fields' => array(
+			'assessment_rate_id' => array(
+				'description' => 'The primary identifier for subscriber.',
+				'type' => 'serial',
+				'not null' => TRUE,
+				'unsigned' => TRUE,
+			),
+			'assessment_id' => array(
+				'description' => 'Foreign Key for assessment_details table',
+				'type' => 'int',
+				'not null' => TRUE,
+				'default' => 0,
+			),
+            'population_value' => array(
+                'description' => 'Get Population selected values',
+                'type' => 'varchar',
+                'length' => 255,
+                'not null' => TRUE,
+            ),
+             'rate' => array(
+                'description' => 'Rate given',
+                'type' => 'float',
+				'unsigned' => TRUE,
+				'precision' => 10,
+				'scale' => 2,
+                'default' => 0.00,
+            ),
+             'sample_size' => array(
+                'description' => 'Sample Size',
+                'type' => 'float',
+				'unsigned' => TRUE,
+				'precision' => 10,
+				'scale' => 2,
+                'default' => 0.00,
+            ),
+             'rate_male' => array(
+                'description' => 'Rate for Male',
+                'type' => 'float',
+				'unsigned' => TRUE,
+				'precision' => 10,
+				'scale' => 2,
+                'default' => 0.00,
+            ),
+             'sample_size_male' => array(
+                'description' => 'Sample size for Male',
+                'type' => 'float',
+				'unsigned' => TRUE,
+				'precision' => 10,
+				'scale' => 2,
+                'default' => 0.00,
+            ),
+             'rate_female' => array(
+                'description' => 'Rate for female',
+                'type' => 'float',
+				'unsigned' => TRUE,
+				'precision' => 10,
+				'scale' => 2,
+                'default' => 0.00,
+            ),
+             'sample_size_female' => array(
+                'description' => 'Sample size for Female',
+                'type' => 'float',
+				'unsigned' => TRUE,
+				'precision' => 10,
+				'scale' => 2,
+                'default' => 0.00,
+            ),
+            'rate_white' => array(
+                'description' => 'Rate White',
+                'type' => 'float',
+				'unsigned' => TRUE,
+				'precision' => 10,
+				'scale' => 2,
+                'default' => 0.00,
+            ),
+             'rate_aa' => array(
+                'description' => 'Rate AA',
+                'type' => 'float',
+				'unsigned' => TRUE,
+				'precision' => 10,
+				'scale' => 2,
+                'default' => 0.00,
+            ),
+            'rate_hisp' => array(
+                'description' => 'Rate Hisp',
+                'type' => 'float',
+				'unsigned' => TRUE,
+				'precision' => 10,
+				'scale' => 2,
+                'default' => 0.00,
+            ),
+            'rate_ai' => array(
+                'description' => 'Rate AI',
+                'type' => 'float',
+				'unsigned' => TRUE,
+				'precision' => 10,
+				'scale' => 2,
+                'default' => 0.00,
+            ),
+            'rate_asian' => array(
+                'description' => 'Rate Asian',
+                'type' => 'float',
+				'unsigned' => TRUE,
+				'precision' => 10,
+				'scale' => 2,
+                'default' => 0.00,
+            ),
+            'rate_other' => array(
+                'description' => 'Rate Others',
+                'type' => 'float',
+				'unsigned' => TRUE,
+				'precision' => 10,
+				'scale' => 2,
+                'default' => 0.00,
+            ),
+        ),
+        'primary key' => array('assessment_rate_id'),
+    );
+    return $schema;
+}
+
+
+
+?>

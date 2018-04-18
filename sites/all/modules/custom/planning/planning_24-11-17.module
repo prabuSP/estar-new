@@ -1,0 +1,1150 @@
+<?php
+
+function planning_menu() {
+  $items = array();
+  
+  $items['new-planning'] = array( //this creates a URL that will call this form at "examples/form-example"
+    'title' => 'New Data Model', //page title
+    'page callback' => 'drupal_get_form', //this is the function that will be called when the page is accessed.  for a form, use drupal_get_form
+    'page arguments' => array('new_planning'), //put the name of the form here
+    'access callback' => TRUE
+  );
+  
+   $items['planning-details-form'] = array( //this creates a URL that will call this form at "docroot/new_assessment"
+    'title' => 'Existing Logic Models', //page title
+    'page callback' => 'drupal_get_form', //this is the function that will be called when the page is accessed.  for a form, use drupal_get_form
+    'page arguments' => array('planning_details_form'), //put the name of the form here
+    'access callback' => TRUE
+  );
+  
+    $items['planning-details'] = array( 
+    'title' => 'Planning Details', //page title
+    'description' => 'The Planning Details will get all fields input values from form submit',
+    'page callback' => 'drupal_get_form', //this is the function that will be called when the page is accessed.  for a form, use drupal_get_form
+    'page arguments' => array('planning_details'), //put the name of the form here
+    'access callback' => TRUE
+  );
+  
+   $items['planning-details-view'] = array( 
+    'title' => 'Planning Details View', //page title
+    'description' => 'The Planning Details View will get all fields input values from form submit',
+    'page callback' => 'drupal_get_form', //this is the function that will be called when the page is accessed.  for a form, use drupal_get_form
+    'page arguments' => array('planning_details_view'), //put the name of the form here
+    'access callback' => TRUE
+  );
+  
+  return $items;
+}
+
+function new_planning($form, &$form_state) {
+ 
+/* vid '2' means Datasource Texanomy terms which is configured in Drupal admin */
+  
+$datasource_data = db_query("SELECT name, name FROM {taxonomy_term_data} WHERE vid = 2")->fetchAllKeyed();
+
+$datasource_data['Custom']="Custom";
+
+$form['substance_option'] = array(
+'#type' => 'radios',
+'#title' => t('Substance'),
+'#required'=>TRUE,
+'#options' => $datasource_data,
+'#attributes'=>array("onclick"=>"showSourceTextfield(this)")
+);
+
+$form['data_custom'] = array(
+		'#type' => 'textfield',
+		'#attributes'=>array("style"=>"display:none","id"=>"dataCustom")
+	);
+
+$form['field_describe_your_problem'] = array(
+       '#type' => 'textarea',
+       '#title' => t('Describe your problem '),
+       '#required'=>TRUE,
+  );
+
+$assessment_lists1['']="<-- Select which Assessment to be connect -->";
+  
+  $assessment_lists = db_query("SELECT title, title FROM {assessment_details}")->fetchAllKeyed();
+
+$assessment_lists1=array_merge($assessment_lists1,$assessment_lists);
+
+$form['assessment'] = array(
+       '#type' => 'select',
+       '#title' => t('Connect to assessment data model '),
+       '#options'=>$assessment_lists1,
+  );
+  $assessmentLists='<select id="edit-assessment" name="assessment_logic_model" class="form-select">';
+  foreach($assessment_lists1 as $asseList){
+		$assessmentLists.='<option value="'.$asseList.'">'.$asseList.'</option>';
+  }
+  $assessmentLists.="</select>";
+  
+$contributing_factor = db_query("SELECT name, name FROM {taxonomy_term_data} WHERE vid = 12")->fetchAllKeyed();
+
+$interventions = db_query("SELECT name, name FROM {taxonomy_term_data} WHERE vid = 28")->fetchAllKeyed();
+
+$contributingItems="";
+foreach($contributing_factor as $fKey=>$fVal){
+		//echo $fKey."<pre>";print_r($fVal);die;
+		$contributingItems.='<tr>
+                                <td><input type="radio" value="'.$fVal.'" name="contributing_factor" onclick="conFactorCustomTextfield(this,0)"> '.$fVal.'</td>
+                             </tr>';
+}
+$contributingItems.='<tr><td><input id="conFactorCustom0" type="radio" value="Custom" name="contributing_factor" onclick="conFactorCustomTextfield(this,0)"> Custom</td></tr>
+<tr style="display:none;" id="contributingCustom0"><td><input id="confactorText0" name="custom_contributing_factor" value="" size="60" maxlength="128" class="form-text" type="text">
+</td></tr>';
+$interventionsItems="";
+foreach($interventions as $cKey=>$cVal){
+		$interventionsItems.='<tr>
+                                <td><input type="checkbox" value="'.$cVal.'" name="interventions[]" onclick="interCustomTextfield(this,0)"> '.$cVal.'</td>
+                             </tr>';
+}
+$interventionsItems.='<tr><td><input id="interCustom0" type="checkbox" value="Custom" name="interventions[Custom]" onclick="interCustomTextfield(this,0)"> Custom</td></tr>
+<tr style="display:none;" id="intervCustom0"><td><input id="interCustomText0" name="custom_interventions" value="" size="30" maxlength="128" class="form-text" type="text">
+</td></tr>';
+
+    $form['contributing_intervention'] =array(
+    "#title"  => 'Logic model',
+      "#markup"=> '
+      <table id="firstTable"><tr><th>Create Logic Model</th></tr></table>
+ <table id="logicmodel_inter_con">
+           <tr>
+                    <td>
+                        <table id="conFactorTab">
+                            <tr>
+                                <th>Contributing Factor</th>
+                            </tr>
+                            '.$contributingItems.'
+                        </table>
+                    </td>
+                    <td>
+                        <table id="intervTab" class="interventions">
+                            <tr>
+                                <th>Interventions</th>
+                            </tr>
+                           '.$interventionsItems.'
+                        </table>
+                    </td>
+                                    <tr> <td> <label for="edit-assessment">Connect to assessment data model  </label>
+                    '.$assessmentLists.'</td></tr>
+                </tr>
+            </table>
+     <table id="mainTable" class="intervetioncopy"></table>
+            <input type="button"  id ="addMoreInterv" class="" class="add-row" value="Add another contributing factor">
+</table>
+
+
+
+    ');
+    
+        $form['table_count_id1']=array(
+			'#type'=>"hidden",
+			'#value'=>0,
+			'#attributes'=>array("id"=>"LogicModelCountId")
+		);
+
+$form['in_kind '] = array(
+  '#type'     => 'tableselect',
+);
+
+  $form['submit_button'] = array(
+    '#type' => 'submit',
+    '#value' => t('Submit'),
+  );
+  
+  $form['finalSavePlan'] = array(
+    '#type' => 'hidden',
+    '#value' => 'FinalSavePlan',
+  );
+  
+  $form['table_count_id'] = array(
+    '#attributes' => array('id'=>'tableCountId'),
+    '#type' => 'hidden',
+    '#value' => 0,
+  );
+  
+  $form['submit_button_space'] = array(
+    '#markup' => '<br><br>',
+  );
+  
+ $form['#action'][] = 'planning-details-view';
+  
+  return $form;
+}
+
+function planning_details_view(){ 
+		global $user;//echo "<pre>";print_r($_REQUEST);die;
+	if(isset($_REQUEST['finalSavePlan']) && $_REQUEST['finalSavePlan']=='FinalSavePlan' && isset($_REQUEST['substance_option']) && $_REQUEST['substance_option']!='' && isset($_REQUEST['field_describe_your_problem']) && $_REQUEST['field_describe_your_problem']!=''){ 
+		
+	if(isset($_REQUEST['data_custom']) && $_REQUEST['data_custom']!=''){ 
+       
+       $substance_value=$_REQUEST['data_custom'];
+			// Get the Datasource vocabulary ID.
+		$data_source_vid = '2';
+	
+	   if($data_source_vid!=''){	
+			/* Custom Taxonomy creation */
+		   
+			$tax_res=taxonomy_term_save((object) array(
+			  'name' => $substance_value,
+			  'vid' => $data_source_vid,
+			  'description' => $substance_value,
+			  'format' => 'filtered_html',
+			  'weight' => 0,
+			));
+			if(count($tax_res)>0){
+				drupal_set_message($substance_value.' taxonomy added successfully');
+		    }
+		}else{
+		   drupal_set_message('Something went wrong please try again later.','error');
+		}
+   
+   }
+   
+   	if(isset($_REQUEST['custom_contributing_factor']) && $_REQUEST['custom_contributing_factor']!=''){ 
+       
+       $contributing_factor=$_REQUEST['custom_contributing_factor'];
+			// Get the Datasource vocabulary ID.
+		$contributing_vid = '12';
+	
+	   if($contributing_vid!=''){	
+			/* Custom Taxonomy creation */
+		   
+			$cf_res=taxonomy_term_save((object) array(
+			  'name' => $contributing_factor,
+			  'vid' => $contributing_vid,
+			  'description' => $contributing_factor,
+			  'format' => 'filtered_html',
+			  'weight' => 0,
+			));
+			if(count($cf_res)>0){
+				drupal_set_message($contributing_factor.' taxonomy added successfully');
+		    }
+		}else{
+		   drupal_set_message('Something went wrong please try again later.','error');
+		}
+   
+   }
+   
+   	if(isset($_REQUEST['custom_interventions']) && $_REQUEST['custom_interventions']!=''){ 
+       
+       $interv=$_REQUEST['custom_interventions'];
+			// Get the Datasource vocabulary ID.
+		$interv_vid = '28';
+	
+	   if($interv_vid!=''){	
+			/* Custom Taxonomy creation */
+		   
+			$iv_res=taxonomy_term_save((object) array(
+			  'name' => $interv,
+			  'vid' => $interv_vid,
+			  'description' => $interv,
+			  'format' => 'filtered_html',
+			  'weight' => 0,
+			));
+			if(count($iv_res)>0){
+				drupal_set_message($interv.' taxonomy added successfully');
+		    }
+		}else{
+		   drupal_set_message('Something went wrong please try again later.','error');
+		}
+   
+   }
+       
+        $planningTitle=(($_REQUEST['data_custom']!='') ? $_REQUEST['data_custom']." Logic Model" : $_REQUEST['substance_option']." Logic Model");
+        drupal_set_title($planningTitle);
+        $problem=(($_REQUEST['field_describe_your_problem']!='') ? $_REQUEST['field_describe_your_problem'] : '');
+        $connectAssessment=(($_REQUEST['assessment']!='') ? $_REQUEST['assessment'] : '');
+        //$planningDetailsHtml="<table><tr><td><strong>".$planningTitle."</strong></td></tr>";
+        if($problem!=''){
+			$planningDetailsHtml.="<table><tr><td><strong>Problem: ".$problem."</strong></td></tr>";
+	    }
+	    if($connectAssessment!=''){
+			$planningDetailsHtml.="<tr><td><strong>Assessment Data Model: ".$connectAssessment."</strong></table></td></tr>";
+	    }
+	    $planTableCount=count($_REQUEST['custom_contributing_factor']);
+	    
+        $interventionItems=((isset($_REQUEST['interventions'])) ? $_REQUEST['interventions'] : '');
+        
+	    $contributingSelectedItems=""; $interventionsSelectedItems="";
+        
+       $logicModelCount=$_REQUEST['table_count_id'];
+       
+       if($logicModelCount!="0"){ /* Multiple logic model if start */
+               
+                for($inv=0;$inv<count($_REQUEST['interventions']);$inv++){
+						$internCollection['internCollection0'][$inv]=$_REQUEST['interventions'][$inv];
+				}
+		   for($i=1;$i<=$logicModelCount;$i++){
+				$contribCollection['contribCollection'.$i]=$_REQUEST['contributing_factor'.$i];
+				$assessmentCollection['assessmentCollection'.$i]=$_REQUEST['assessment_logic_model'.$i];
+				for($in=0;$in<count($_REQUEST['interventions'.$i]);$in++){
+						$internCollection['internCollection'.$i][$in]=$_REQUEST['interventions'.$i][$in];
+				}
+		   }
+		   
+		    if(isset($_REQUEST['contributing_factor']) && $_REQUEST['contributing_factor']!='Custom'){
+				$contributingSelectedItems.='<tr><td>'.$_REQUEST['contributing_factor'].'</td></tr>';
+		    }
+		    if(isset($_REQUEST['assessment_logic_model']) && $_REQUEST['assessment_logic_model']!=''){
+				$contributingSelectedItems.="<tr><td><strong>Assessment Data Model: ".$_REQUEST['assessment_logic_model']."</strong></td></tr>";
+		    }
+		    if(isset($_REQUEST['custom_contributing_factor']) && $_REQUEST['custom_contributing_factor']!=''){
+					$contributingSelectedItems.='<tr><td>'.$_REQUEST['custom_contributing_factor'].'</td></tr>';
+					$contribCollection['contribCollection0']=$_REQUEST['custom_contributing_factor'];
+			}else{
+					 $contribCollection['contribCollection0']=$_REQUEST['contributing_factor'];
+			}
+			if(isset($_REQUEST['assessment_logic_model']) && $_REQUEST['assessment_logic_model']!=''){
+				$assessmentCollection['assessmentCollection0']=$_REQUEST['assessment_logic_model'];
+			}
+		    if(count($interventionItems)>1){
+				for($i=0;$i<count($interventionItems);$i++){
+					$interventionsSelectedItems.='<tr><td>'.$interventionItems[$i].'</td></tr>';
+				}
+			}else{ 
+				$interventionsSelectedItems.='<tr><td> '.$_REQUEST['interventions'][0].'</td></tr>';
+			}
+			
+			if(isset($_REQUEST['custom_interventions']) && $_REQUEST['custom_interventions']!=''){
+					$interventionsSelectedItems.='<tr><td>'.$_REQUEST['custom_interventions'].'</td></tr>';
+					$internCollection['internCollection0'][0]=$_REQUEST['custom_interventions'];
+			}
+		   
+		      $contribItems['contributingCollection']=$contribCollection;
+		      $intervItems['interventionCollection']=$internCollection;
+            //echo "<pre>";print_r($contribItems);echo "<pre>";print_r($intervItems);die;
+		   	if($planningTitle!=''){
+				$planning_id=db_insert('planning_details')
+					->fields(array(
+					'uid' => $user->uid,
+					'title' => $planningTitle,
+					'problem' => $problem,
+					'assessment_data_model' => $connectAssessment,
+					'assessment_data_collection' => serialize($assessmentCollection),
+					'contributing_factor' => serialize($contribItems),
+					'interventions' => serialize($intervItems),
+					))->execute();
+				if(count($planning_id)>0){
+						drupal_set_message('<strong>'.$planningTitle.'</strong> details successfully saved');
+				}
+					
+			}
+
+	$form["planning_table_mark_up"]=array(
+			"#markup"=>$planningDetailsHtml
+	);
+	
+	$form["planning_logic_model_title_start_up1"]=array("#markup"=>'<table id="firstTable"><tr><th>'.$planningTitle.'</th></tr></table>');
+    
+    $form["planning_hid_mark_up"]=array(
+			"#markup"=>'
+ <table id="logicmodel_inter_con">
+           <tr>
+                    <td>
+                        <table id="conFactorTab">
+                            <tr>
+                                <th>Contributing Factor</th>
+                            </tr>
+                            '.$contributingSelectedItems.'
+                        </table>
+                    </td>
+                    <td>
+                        <table id="intervTab" class="interventions">
+                            <tr>
+                                <th>Interventions</th>
+                            </tr>
+                           '.$interventionsSelectedItems.'
+                        </table>
+                    </td>
+                </tr>
+              
+            </table>
+</table>
+<br><br>');	
+			$conSelectedItems="";$intSelectedItems="";
+			$ico=1;
+			//$planningTitleHtml='<tr><th>'.$planningTitle.'</th></tr>';
+			//$form["planning_logic_model_title_start_two"]=array("#markup"=>'<table id="firstTable"><tr><th>'.$planningTitle.'</th></tr></table>');
+		   for($i=1;$i<=$logicModelCount;$i++){
+			   	
+			   	$conSelectedItems.='<tr><td>'.$_REQUEST['contributing_factor'.$i].'</td></tr>';
+			   	$conSelectedItems.="<tr><td><strong>Assessment Data Model ".$i." : ".$_REQUEST['assessment_logic_model'.$i]."</strong></td></tr>";
+				for($in=0;$in<count($_REQUEST['interventions'.$i]);$in++){
+						$intSelectedItems.='<tr><td>'.$_REQUEST['interventions'.$i][$in].'</td></tr>';
+				}
+			   
+			  $form["planning_hid_mark_up".$i]=array(
+			"#markup"=>'
+ <table id="logicmodel_inter_con">
+           <tr>
+                    <td>
+                        <table id="conFactorTab">
+                            <tr>
+                                <th>Contributing Factor</th>
+                            </tr>
+                            '.$conSelectedItems.'
+                        </table>
+                    </td>
+                    <td>
+                        <table id="intervTab" class="interventions">
+                            <tr>
+                                <th>Interventions</th>
+                            </tr>
+                           '.$intSelectedItems.'
+                        </table>
+                    </td>
+                </tr>
+              
+            </table>
+</table>
+<br><br>');
+$ico++;
+$conSelectedItems="";$intSelectedItems="";
+			   
+		   }
+		  $form['multiple_logic_model_end'] =array(
+			'#markup'=>'<strong><a href="planning-details-form" >Back to Existing Logic Model</a></strong><br><br>'
+		  );
+		   
+		   
+       }else{ 
+	   
+	    if($planTableCount>1){ 
+			if(isset($_REQUEST['contributing_factor']) && $_REQUEST['contributing_factor']!=''){
+				$contributingSelectedItems.='<tr><td>'.$_REQUEST['contributing_factor'].'</td></tr>';
+		    }
+		    if(isset($_REQUEST['assessment_logic_model']) && $_REQUEST['assessment_logic_model']!=''){
+			    $contributingSelectedItems.="<tr><td><strong>Assessment Data Model : ".$_REQUEST['assessment_logic_model']."</strong></td></tr>";
+		    }
+		    if(count($interventionItems)>1){
+				for($i=0;$i<count($interventionItems);$i++){
+					$interventionsSelectedItems.='<tr><td>'.$interventionItems[$i].'</td></tr>';
+				}
+			}
+			for($j=1;$j<=$planTableCount;$j++){
+				$contributingSelectedItems.='<tr><td>'.$_REQUEST['contributing_factor'.$j].'</td></tr>';
+				$contributingSelectedItems.="<tr><td><strong>Assessment Data Model ".$i." : ".$_REQUEST['assessment_logic_model'.$i]."</strong></td></tr>";
+			}
+		}else{ 
+		
+			if(isset($_REQUEST['contributing_factor']) && $_REQUEST['contributing_factor']!='Custom'){
+				$contributingSelectedItems.='<tr><td>'.$_REQUEST['contributing_factor'].'</td></tr>';
+			}
+			 if(isset($_REQUEST['custom_contributing_factor']) && $_REQUEST['custom_contributing_factor']!=''){
+					$contributingSelectedItems.='<tr><td>'.$_REQUEST['custom_contributing_factor'].'</td></tr>';
+			}
+		    if(isset($_REQUEST['assessment_logic_model']) && $_REQUEST['assessment_logic_model']!=''){
+			    $contributingSelectedItems.="<tr><td><strong>Assessment Data Model : ".$_REQUEST['assessment_logic_model']."</strong></td></tr>";
+		    }
+			
+			if(count($interventionItems)>1){ 
+				for($i=0;$i<count($interventionItems);$i++){
+					$interventionsSelectedItems.='<tr><td>'.$interventionItems[$i].'</td></tr>';
+				}
+			}else{ 
+				$interventionsSelectedItems.='<tr><td> '.$_REQUEST['interventions'][0].'</td></tr>';
+			}
+			
+			if(isset($_REQUEST['custom_interventions']) && $_REQUEST['custom_interventions']!=''){
+					$interventionsSelectedItems.='<tr><td>'.$_REQUEST['custom_interventions'].'</td></tr>';
+			}
+	    }
+	    
+	    if(isset($_REQUEST['custom_contributing_factor']) && $_REQUEST['custom_contributing_factor']!=''){ 
+			 $contributing_factor_items=$_REQUEST['custom_contributing_factor'];
+		}else{
+			 $contributing_factor_items=$_REQUEST['contributing_factor'];
+		}
+		if(isset($_REQUEST['assessment_logic_model']) && $_REQUEST['assessment_logic_model']!=''){ 
+			$assementConnect=$_REQUEST['assessment_logic_model'];
+		}
+			
+			if(count($interventionItems)>1){ 
+				for($i=0;$i<count($interventionItems);$i++){
+					$interv_items.=$interventionItems[$i].',';
+				}
+			}else{ 
+				$interv_items.=$_REQUEST['interventions'][0].',';
+			}
+		if(isset($_REQUEST['custom_interventions']) && $_REQUEST['custom_interventions']!=''){ 
+			$interv_items.=$_REQUEST['custom_interventions'];
+		}
+	    	    
+	        if($planningTitle!=''){
+				$planning_id=db_insert('planning_details')
+					->fields(array(
+					'uid' => $user->uid,
+					'title' => $planningTitle,
+					'problem' => $problem,
+					'assessment_data_model' => $connectAssessment,
+					'assessment_data_collection' => $assementConnect,
+					'contributing_factor' => $contributing_factor_items,
+					'interventions' => $interv_items,
+					))->execute();
+				if(count($planning_id)>0){
+						drupal_set_message('<strong>'.$planningTitle.'</strong> details successfully saved');
+				}
+					
+			}
+
+	$form["planning_table_mark_up"]=array(
+			"#markup"=>$planningDetailsHtml
+	);
+	
+	$form["planning_logic_model_title_start_up"]=array("#markup"=>'<table id="firstTable"><tr><th>'.$planningTitle.'</th></tr></table>');
+    
+    $form["planning_hid_mark_up"]=array(
+			"#markup"=>'
+ <table id="logicmodel_inter_con">
+           <tr>
+                    <td>
+                        <table id="conFactorTab">
+                            <tr>
+                                <th>Contributing Factor</th>
+                            </tr>
+                            '.$contributingSelectedItems.'
+                        </table>
+                    </td>
+                    <td>
+                        <table id="intervTab" class="interventions">
+                            <tr>
+                                <th>Interventions</th>
+                            </tr>
+                           '.$interventionsSelectedItems.'
+                        </table>
+                    </td>
+                </tr>
+              
+            </table>
+</table>
+<strong><a href="planning-details-form" >Back to Existing Logic Model</a></strong><br><br>
+'
+	);	
+	
+   } /* Multiple logic model if end */
+	
+	//echo "<pre>";print_r($form);die;
+	
+
+			
+	}else if(isset($_REQUEST['finalEditPlan']) && $_REQUEST['finalEditPlan']=='FinalEditPlan' && isset($_REQUEST['planning_id']) && $_REQUEST['planning_id']!=''){ 
+	    
+	       	if(isset($_REQUEST['custom_contributing_factor']) && $_REQUEST['custom_contributing_factor']!=''){ 
+       
+       $contributing_factor=$_REQUEST['custom_contributing_factor'];
+			// Get the Datasource vocabulary ID.
+		$contributing_vid = '12';
+	
+	   if($contributing_vid!=''){	
+			/* Custom Taxonomy creation */
+		   
+			$cf_res=taxonomy_term_save((object) array(
+			  'name' => $contributing_factor,
+			  'vid' => $contributing_vid,
+			  'description' => $contributing_factor,
+			  'format' => 'filtered_html',
+			  'weight' => 0,
+			));
+			if(count($cf_res)>0){
+				drupal_set_message($contributing_factor.' taxonomy added successfully');
+		    }
+		}else{
+		   drupal_set_message('Something went wrong please try again later.','error');
+		}
+   
+   }
+   
+   	if(isset($_REQUEST['custom_interventions']) && $_REQUEST['custom_interventions']!=''){ 
+       
+       $interv=$_REQUEST['custom_interventions'];
+			// Get the Datasource vocabulary ID.
+		$interv_vid = '28';
+	
+	   if($interv_vid!=''){	
+			/* Custom Taxonomy creation */
+		   
+			$iv_res=taxonomy_term_save((object) array(
+			  'name' => $interv,
+			  'vid' => $interv_vid,
+			  'description' => $interv,
+			  'format' => 'filtered_html',
+			  'weight' => 0,
+			));
+			if(count($iv_res)>0){
+				drupal_set_message($interv.' taxonomy added successfully');
+		    }
+		}else{
+		   drupal_set_message('Something went wrong please try again later.','error');
+		}
+   
+   }
+	    
+	    
+		$plan_id=$_REQUEST['planning_id'];
+        $planningTitle=(($_REQUEST['data_custom']!='') ? $_REQUEST['data_custom']." Logic Model" : $_REQUEST['substance_option']." Logic Model");
+        drupal_set_title($planningTitle);
+        $problem=(($_REQUEST['field_describe_your_problem']!='') ? $_REQUEST['field_describe_your_problem'] : '');
+        $connectAssessment=(($_REQUEST['assessment']!='') ? $_REQUEST['assessment'] : '');
+        $logicModelCount=$_REQUEST['table_count_id'];       
+         if($logicModelCount!="0"){ /* Multiple logic model if start */ //echo "<pre>";print_r($_REQUEST);die;
+
+				if(isset($_REQUEST['custom_contributing_factor']) && $_REQUEST['custom_contributing_factor']!=''){
+						$contribCollection['contribCollection0']=$_REQUEST['custom_contributing_factor'];
+				}else{
+						$contribCollection['contribCollection0']=$_REQUEST['contributing_factor'];
+				}
+
+
+                for($inv=0;$inv<count($_REQUEST['interventions']);$inv++){
+						$internCollection['internCollection0'][$inv]=$_REQUEST['interventions'][$inv];
+				}
+		   for($i=1;$i<=$logicModelCount;$i++){
+				$contribCollection['contribCollection'.$i]=$_REQUEST['contributing_factor'.$i];
+				for($in=0;$in<count($_REQUEST['interventions'.$i]);$in++){
+						$internCollection['internCollection'.$i][$in]=$_REQUEST['interventions'.$i][$in];
+				}
+		   }
+		   
+		    if(isset($_REQUEST['contributing_factor']) && $_REQUEST['contributing_factor']!=''){
+				$contributingSelectedItems.='<tr><td>'.$_REQUEST['contributing_factor'].'</td></tr>';
+		    }
+		    if(isset($_REQUEST['assessment_logic_model']) && $_REQUEST['assessment_logic_model']!=''){
+			    $contributingSelectedItems.="<tr><td><strong>Assessment Data Model : ".$_REQUEST['assessment_logic_model']."</strong></td></tr>";
+		    }
+		    if(count($interventionItems)>1){
+				for($i=0;$i<count($interventionItems);$i++){
+					$interventionsSelectedItems.='<tr><td>'.$interventionItems[$i].'</td></tr>';
+				}
+			}
+			
+				if(isset($_REQUEST['custom_interventions']) && $_REQUEST['custom_interventions']!=''){
+						$internCollection['internCollection0'][0]=$_REQUEST['custom_interventions'];
+				}
+		   
+		      $contribItems['contributingCollection']=$contribCollection;
+		      $intervItems['interventionCollection']=$internCollection;
+            //echo "<pre>";print_r($contribItems);echo "<pre>";print_r($intervItems);die;
+            
+            if($plan_id!=''){
+			$planning_update_result= db_update('planning_details') 
+                ->fields(array(
+				'planning_id' => $plan_id,
+				'uid' => $user->uid,
+				'title' => $planningTitle,
+				'problem' => $problem,
+				'assessment_data_model' => $connectAssessment,
+				'contributing_factor' => serialize($contribItems),
+				'interventions' => serialize($intervItems),
+				))
+                ->condition('planning_id', $plan_id, '=')
+                ->execute();
+	        
+				if(count($planning_update_result)>0){
+						drupal_set_message('<strong>'.$planningTitle.'</strong> details successfully updated');
+				}
+			}
+
+	$form["planning_table_mark_up"]=array(
+			"#markup"=>$planningDetailsHtml
+	);
+			$conSelectedItems="";$intSelectedItems="";
+			  $conSelectedItems.='<tr><td>'.$_REQUEST['contributing_factor'].'</td></tr>';
+			  
+			if(isset($_REQUEST['custom_contributing_factor']) && $_REQUEST['custom_contributing_factor']!=''){
+					$conSelectedItems.='<tr><td>'.$_REQUEST['custom_contributing_factor'].'</td></tr>';
+			}
+			if(isset($_REQUEST['custom_interventions']) && $_REQUEST['custom_interventions']!=''){
+					$intSelectedItems.='<tr><td>'.$_REQUEST['custom_interventions'].'</td></tr>';
+			}
+			  
+				for($in=0;$in<count($_REQUEST['interventions']);$in++){
+						$intSelectedItems.='<tr><td>'.$_REQUEST['interventions'][$in].'</td></tr>';
+				}
+				$ico=1;
+				$form["planning_logic_model_title_start"]=array("#markup"=>'<table id="firstTable"><tr><th>'.$planningTitle.'</th></tr></table>');
+		   for($i=0;$i<=$logicModelCount;$i++){
+			   	
+			   	$conSelectedItems.='<tr><td>'.$_REQUEST['contributing_factor'.$i].'</td></tr>';
+				for($in=0;$in<count($_REQUEST['interventions'.$i]);$in++){
+						$intSelectedItems.='<tr><td>'.$_REQUEST['interventions'.$i][$in].'</td></tr>';
+				}
+			   
+			  $form["planning_hid_mark_up".$i]=array(
+			"#markup"=>'
+ <table id="logicmodel_inter_con">
+           <tr>
+                    <td>
+                        <table id="conFactorTab">
+                            <tr>
+                                <th>Contributing Factor</th>
+                            </tr>
+                            '.$conSelectedItems.'
+                        </table>
+                    </td>
+                    <td>
+                        <table id="intervTab" class="interventions">
+                            <tr>
+                                <th>Interventions</th>
+                            </tr>
+                           '.$intSelectedItems.'
+                        </table>
+                    </td>
+                </tr>
+              
+            </table>
+</table>
+<br><br>');
+$ico++;
+$conSelectedItems="";$intSelectedItems="";
+			   
+		   }
+		  $form['multiple_logic_model_end'] =array(
+			'#markup'=>'<strong><a href="planning-details-form" >Back to Existing Logic Model</a></strong><br><br>'
+		  );
+		   
+		   
+       }else{
+                
+        $interventionItems=((isset($_REQUEST['interventions'])) ? $_REQUEST['interventions'] : '');
+   
+        //$planningDetailsHtml="<table><tr><td><strong>".$planningTitle."</strong></td></tr>";
+        if($problem!=''){
+			$planningDetailsHtml.="<table><tr><td><strong>Problem: ".$problem."</strong></td></tr>";
+	    }
+	    if($connectAssessment!=''){
+			$planningDetailsHtml.="<tr><td><strong>Assessment Data Model: ".$connectAssessment."</strong></table></td></tr>";
+	    }
+	    
+	    $planTableCount=count($_REQUEST['custom_contributing_factor']);
+	    $contributingSelectedItems=""; $interventionsSelectedItems="";
+		
+			if(isset($_REQUEST['contributing_factor']) && $_REQUEST['contributing_factor']!='Custom'){
+				$contributingSelectedItems.='<tr><td>'.$_REQUEST['contributing_factor'].'</td></tr>';
+			}else if(isset($_REQUEST['custom_contributing_factor']) && $_REQUEST['custom_contributing_factor']!=''){
+				$contributingSelectedItems.='<tr><td>'.$_REQUEST['custom_contributing_factor'].'</td></tr>';
+			}
+			
+			if(count($interventionItems)>1){ 
+				for($i=0;$i<count($interventionItems);$i++){
+					$interventionsSelectedItems.='<tr><td>'.$interventionItems[$i].'</td></tr>';
+				}
+			}else{ 
+				$interventionsSelectedItems.='<tr><td> '.$_REQUEST['interventions'][0].'</td></tr>';
+			}
+			if(isset($_REQUEST['custom_interventions']) && $_REQUEST['custom_interventions']!=''){ 
+				$interventionsSelectedItems.='<tr><td> '.$_REQUEST['custom_interventions'].'</td></tr>';
+			}
+	       
+	       if(isset($_REQUEST['custom_contributing_factor']) && $_REQUEST['custom_contributing_factor']!=''){
+			    $contributing_factor_items=$_REQUEST['custom_contributing_factor'];
+		   }else{
+				$contributing_factor_items=$_REQUEST['contributing_factor'];
+		   }
+			
+			if(count($interventionItems)>1){ 
+				for($i=0;$i<count($interventionItems);$i++){
+					$interv_items.=$interventionItems[$i].',';
+				}
+				if(isset($_REQUEST['custom_interventions']) && $_REQUEST['custom_interventions']!=''){ 
+					$interv_items.=$_REQUEST['custom_interventions'];
+				}
+			}else{ 
+				$interv_items.=$_REQUEST['interventions'][0];
+			}
+			
+			if($plan_id!=''){
+			$planning_update_result= db_update('planning_details') 
+                ->fields(array(
+				'planning_id' => $plan_id,
+				'uid' => $user->uid,
+				'title' => $planningTitle,
+				'problem' => $problem,
+				'assessment_data_model' => $connectAssessment,
+				'contributing_factor' => $contributing_factor_items,
+				'interventions' => $interv_items,
+				))
+                ->condition('planning_id', $plan_id, '=')
+                ->execute();
+	        
+				if(count($planning_update_result)>0){
+						drupal_set_message('<strong>'.$planningTitle.'</strong> details successfully updated');
+				}
+			}		
+			
+
+	$form["planning_table_mark_up"]=array(
+			"#markup"=>$planningDetailsHtml
+	);
+	
+	$form["planning_logic_model_title_start_t"]=array("#markup"=>'<table id="firstTable"><tr><th>'.$planningTitle.'</th></tr></table>');
+    
+    $form["planning_hid_mark_up"]=array(
+			"#markup"=>'
+ <table id="logicmodel_inter_con">
+           <tr>
+                    <td>
+                        <table id="conFactorTab">
+                            <tr>
+                                <th>Contributing Factor</th>
+                            </tr>
+                            '.$contributingSelectedItems.'
+                        </table>
+                    </td>
+                    <td>
+                        <table id="intervTab" class="interventions">
+                            <tr>
+                                <th>Interventions</th>
+                            </tr>
+                           '.$interventionsSelectedItems.'
+                        </table>
+                    </td>
+                </tr>
+              
+            </table>
+</table>
+<strong><a href="planning-details-form" >Back to Existing Logic Model</a></strong><br><br>
+'
+	);
+	
+}
+	
+  }else{
+	
+		$form['NoPlanAccess']=array(
+		'#markup'=>"<p>No Access to Planning View</p>"
+		
+		);
+		
+		
+	}
+	
+	
+		return $form;
+	
+}
+
+function planning_details_form(){
+
+	global $user;
+	$query = db_select('planning_details','a');
+	$query->fields('a', array('planning_id','title'));
+	//$query->groupBy('a.title');
+	$query->orderBy('a.title','ASC');
+	$planning_data_lists = $query->execute()->fetchAll();//echo "<pre>";print_r($assessment_data_lists);die;
+	
+	$planningListItems="<table id='planningDataLists'>
+	        <thead><tr><td><strong>Existing Logic Models Title</strong></td>
+			</tr></thead>";
+	if(isset($planning_data_lists) && count($planning_data_lists)>0){ 
+			foreach($planning_data_lists as $dataKey=>$dataItem){ 
+				$planningListItems .='<tbody><tr><td><a href="planning-details?planning_id='.$dataItem->planning_id.'">'.$dataItem->title.'</a></td>';
+			}
+	}else{
+		
+		$planningListItems.='<tr><td colspan="3">No Existing Data found.</td></tr>';   
+			
+	}
+	
+	$planningListItems.="</table>";
+	
+	   $form['planning_details_block_start']=array(
+		'#markup'=>'<div class="field-items"><div class="field-item even" id="first"><p>The Planning module is where you will enter background statistics and data related to the program.<br>
+<strong>How to</strong><br>
+ To enter statistics or data click the link below click the link below to either add data to an existing data set or click "new" to start a new data set.</p>
+
+<h3>Existing Data Models</h3>
+<p style="margin-left:20px;">
+'.$planningListItems.'
+</p>
+<p><a href="new-planning">Create New Logic Model</a></p>
+</div></div><br><br>'
+		         		
+   );
+   
+   return $form;
+	
+	
+}
+
+function planning_details(){
+
+if(isset($_REQUEST['planning_id']) && $_REQUEST['planning_id']!=''){
+		
+		$plan_id=$_REQUEST['planning_id'];
+		$planning_data_lists = db_query("SELECT * FROM {planning_details} WHERE planning_id = ".$plan_id)->fetchAll();
+
+		//echo "<pre>";print_r($connectedAssessmentCollection);die;
+		//$assessment_rate_lists = db_query("SELECT assessment_rate_details.assessment_id, assessment_rate_details.title FROM {assessment_rate_details} WHERE assessment_id = ".$asse_id)->fetchAllKeyed();
+
+        $title=$planning_data_lists[0]->title;
+        drupal_set_title($title);
+		$problem=$planning_data_lists[0]->problem;
+		$assessmentConnect=$planning_data_lists[0]->assessment_data_model;
+
+		$cTitle=strstr($title, 'Logic Model', true);
+		
+		/* vid '2' means Datasource Texanomy terms which is configured in Drupal admin */
+  
+$datasource_data = db_query("SELECT name, name FROM {taxonomy_term_data} WHERE vid = 2")->fetchAllKeyed();
+
+
+$form['substance_option'] = array(
+'#type' => 'radios',
+'#title' => t('Substance'),
+'#required'=>TRUE,
+'#options' => $datasource_data,
+'#default_value' => trim($cTitle),
+);
+
+$assessment_lists1['']="<-- Select which Assessment to be connect -->";
+  
+  $assessment_lists = db_query("SELECT title, title FROM {assessment_details}")->fetchAllKeyed();
+
+$assessment_lists1=array_merge($assessment_lists1,$assessment_lists);
+
+
+$form['field_describe_your_problem'] = array(
+       '#type' => 'textarea',
+       '#title' => t('Describe your problem '),
+       '#required'=>TRUE,
+       '#default_value' => $problem,
+  );
+
+$form['assessment'] = array(
+       '#type' => 'select',
+       '#title' => t('Connect to assessment data model '),
+       '#options'=>$assessment_lists1,
+       '#default_value' => $assessmentConnect,
+  );
+$contributing_factor = db_query("SELECT name, name FROM {taxonomy_term_data} WHERE vid = 12")->fetchAllKeyed();
+
+$interventions = db_query("SELECT name, name FROM {taxonomy_term_data} WHERE vid = 28")->fetchAllKeyed();
+
+
+		$chkSerialize = @unserialize($planning_data_lists[0]->contributing_factor);
+		if ($chkSerialize !== false) {
+			$contributingFactor=unserialize($planning_data_lists[0]->contributing_factor);
+		    $interventionsCheckedItems=unserialize($planning_data_lists[0]->interventions);
+		    $connectedAssessmentCollection=unserialize($planning_data_lists[0]->assessment_data_model);
+		    
+		    //echo "<pre>";print_r($connectedAssessmentCollection);die;
+		    $logicModelCount=count($contributingFactor['contributingCollection']);
+			$conSelectedItems="";$intSelectedItems="";
+		
+			$ico=1;
+		   for($i=0;$i<$logicModelCount;$i++){
+			   
+			 if(isset($connectedAssessmentCollection) && count($connectedAssessmentCollection)>0){
+				  $assessmentLists='<select id="edit-assessment" name="assessment_logic_model" class="form-select">';
+				  foreach($assessment_lists1 as $asseList){
+					  if($connectedAssessmentCollection['assessmentCollection'.$i]==$asseList){
+						  $assmentSelect='selected="selected"';
+					  }else{
+						  $assmentSelect="";
+					  }
+						$assessmentLists.='<option '.$assmentSelect.' value="'.$asseList.'">'.$asseList.'</option>';
+				  }
+				  $assessmentLists.="</select>";
+		    }
+			   
+			   if($i=="0"){ $ichange=""; }else{ $ichange=$i; }
+			  $contributingItems="";$selCF="";
+			foreach($contributing_factor as $fKey=>$fVal){ 
+					if($fVal==trim($contributingFactor['contributingCollection']['contribCollection'.$i])){ 
+						$selCF='checked="checked"';
+					}else{
+						$selCF="";
+				   }
+					$contributingItems.='<tr>
+											<td><input '.$selCF.' type="radio" value="'.$fVal.'" name="contributing_factor'.$ichange.'" onclick="conFactorCustomTextfield(this,0)"> '.$fVal.'</td>
+										 </tr>';
+			}
+
+			$interventionsItems="";$selInv="";
+			foreach($interventions as $cKey=>$cVal){ 
+				   if(in_array($cVal,$interventionsCheckedItems['interventionCollection']['internCollection'.$i])){
+						$selInv='checked="checked"';
+				   }else{ $selInv=""; }
+					$interventionsItems.='<tr>
+											<td><input '.$selInv.' type="checkbox" value="'.$cVal.'" name="interventions'.$ichange.'[]" onclick="interCustomTextfield(this,0)"> '.$cVal.'</td>
+										 </tr>';
+			}
+			   
+			   if($i=="0"){
+								$contributingItems.='<tr><td><input id="conFactorCustom0" type="radio" value="Custom" name="contributing_factor" onclick="conFactorCustomTextfield(this,0)"> Custom</td></tr>
+			<tr style="display:none;" id="contributingCustom0"><td><input id="confactorText0" name="custom_contributing_factor" value="" size="60" maxlength="128" class="form-text" type="text">
+			</td></tr>';
+
+
+			$interventionsItems.='<tr><td><input id="interCustom0" type="checkbox" value="Custom" name="interventions[Custom]" onclick="interCustomTextfield(this,0)"> Custom</td></tr>
+			<tr style="display:none;" id="intervCustom0"><td><input id="interCustomText0" name="custom_interventions" value="" size="30" maxlength="128" class="form-text" type="text">
+			</td></tr>';
+			   }
+			   if($i==0){
+					$editTabHead='<table id="firstTable"><tr><th>'.$cTitle.' Logic Model</th></tr></table>';
+			   }else{
+				   $editTabHead='<table id="firstTable"></table>';
+			   }
+			   	
+    $form['contributing_intervention'.$i] =array(
+    "#title"  => 'Logic model',
+      "#markup"=> '
+           '.$editTabHead.'
+ <table id="logicmodel_inter_con">
+           <tr>
+                    <td>
+                        <table id="conFactorTab">
+                            <tr>
+                                <th>Contributing Factor</th>
+                            </tr>
+                            '.$contributingItems.'
+                        </table>
+                    </td>
+                    <td>
+                        <table id="intervTab" class="interventions">
+                            <tr>
+                                <th>Interventions</th>
+                            </tr>
+                           '.$interventionsItems.'
+                        </table>
+                    </td>
+                     <tr> <td> <label for="edit-assessment">Connected assessment data model  </label>
+                    '.$assessmentLists.'</td></tr>
+                </tr>
+              
+            </table>
+
+</table>');$ico++;
+
+
+}
+
+		$form['edit_logic_model_end']=array(
+			'#markup'=>'<table id="mainTable" class="intervetioncopy"></table><br><input type="button"  id ="addMoreInterv" class="" class="add-row" value="Add another contributing factor">'
+		);
+		
+		$form['table_count_id']=array(
+			'#type'=>"hidden",
+			'#value'=>($logicModelCount-1),
+			'#attributes'=>array("id"=>"LogicModelCountId")
+		);
+		    
+		    
+		    //echo "<pre>";print_r($contributingFactor);echo "<pre>";print_r($interventionsCheckedItems);die;
+		} else {
+			
+			$contributingFactor=$planning_data_lists[0]->contributing_factor;
+			$interventionsCheckedItems=explode(",",$planning_data_lists[0]->interventions);
+			
+			$contributingItems="";$selCF="";
+		foreach($contributing_factor as $fKey=>$fVal){
+				if($contributingFactor==$fVal){
+					$selCF='checked="checked"';
+				}else{
+					$selCF="";
+				}
+				$contributingItems.='<tr>
+										<td><input '.$selCF.' type="radio" value="'.$fVal.'" name="contributing_factor" onclick="conFactorCustomTextfield(this,0)"> '.$fVal.'</td>
+									 </tr>';
+		}
+
+		$interventionsItems="";$selInv="";
+		foreach($interventions as $cKey=>$cVal){ //echo $cVal."<pre>";print_r($interventionsCheckedItems);die;
+			   if(in_array($cVal,$interventionsCheckedItems)){
+					$selInv='checked="checked"';
+			   }else{ $selInv=""; }
+				$interventionsItems.='<tr>
+										<td><input '.$selInv.' type="checkbox" value="'.$cVal.'" name="interventions[]" onclick="interCustomTextfield(this,0)"> '.$cVal.'</td>
+									 </tr>';
+		}
+
+$contributingItems.='<tr><td><input id="conFactorCustom0" type="radio" value="Custom" name="contributing_factor" onclick="conFactorCustomTextfield(this,0)"> Custom</td></tr>
+<tr style="display:none;" id="contributingCustom0"><td><input id="confactorText0" name="custom_contributing_factor" value="" size="60" maxlength="128" class="form-text" type="text">
+</td></tr>';
+
+
+$interventionsItems.='<tr><td><input id="interCustom0" type="checkbox" value="Custom" name="interventions[Custom]" onclick="interCustomTextfield(this,0)"> Custom</td></tr>
+<tr style="display:none;" id="intervCustom0"><td><input id="interCustomText0" name="custom_interventions" value="" size="30" maxlength="128" class="form-text" type="text">
+</td></tr>';
+
+    $form['contributing_intervention'] =array(
+    "#title"  => 'Logic model',
+      "#markup"=> '
+      <table id="firstTable"><tr><th>Create Logic Model</th></tr></table>
+ <table id="logicmodel_inter_con">
+           <tr>
+                    <td>
+                        <table id="conFactorTab">
+                            <tr>
+                                <th>Contributing Factor</th>
+                            </tr>
+                            '.$contributingItems.'
+                        </table>
+                    </td>
+                    <td>
+                        <table id="intervTab" class="interventions">
+                            <tr>
+                                <th>Interventions</th>
+                            </tr>
+                           '.$interventionsItems.'
+                        </table>
+                    </td>
+                     <tr> <td> <label for="edit-assessment">Connect to assessment data model  </label>
+                    '.$assessmentLists.'</td></tr>
+                </tr>
+              
+            </table>
+                 <table id="mainTable" class="intervetioncopy"></table>
+            <input type="button"  id ="addMoreInterv" class="" class="add-row" value="Add another contributing factor">
+</table>');
+
+		$form['table_count_id']=array(
+			'#type'=>"hidden",
+			'#value'=>0,
+			'#attributes'=>array("id"=>"LogicModelCountId")
+		);
+			
+			
+		}
+
+
+
+$form['in_kind '] = array(
+  '#type'     => 'tableselect',
+);
+
+  $form['submit_button'] = array(
+    '#type' => 'submit',
+    '#value' => t('Update'),
+  );
+  
+  $form['planning_id'] = array(
+    '#type' => 'hidden',
+    '#value' => $plan_id,
+  );
+  
+  $form['finalEditPlan'] = array(
+    '#type' => 'hidden',
+    '#value' => 'FinalEditPlan',
+  );
+
+  $form['submit_button_space'] = array(
+    '#markup' => '<br><br>',
+  );
+  
+  $form['#action'][]="planning-details-view";
+  
+  	
+	return $form;
+
+}
+
+  	
+	
+}
+
+
+
+?>

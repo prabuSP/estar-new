@@ -1,0 +1,873 @@
+<?php
+
+/**
+ * MOU Manager of hook_menu
+ */
+function estar_contacts_menu() {
+    $menu = array();
+    $menu['contact/add'] = array
+  (
+    'title' => 'Contacts',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('estar_contacts_form'),
+    'access callback' => TRUE,
+  );
+  $menu['contact/list'] = array(
+      'title' => 'Contact Lists',
+      'page callback' => 'contact_list_page',
+      'page arguments' => array(1) ,
+      'access callback' => true,
+  );
+
+  $menu['contact/edit'] = array(
+      'title' => 'Edit Contact',
+      'page callback' => 'drupal_get_form',
+      'page arguments' => array('contact_edit_item_form',1) ,
+      'access arguments' => array('Edit Contact items') ,
+      'access callback' => true,
+  );
+
+  $menu['contact/delete'] = array(
+      'title' => 'Delete Contact',
+      'page callback' => 'drupal_get_form',
+      'page arguments' => array('contact_delete_item_form',1) ,
+      'access arguments' => array('Delete Contact items') ,
+      'access callback' => true,
+  );
+
+    return $menu;
+}
+
+function estar_contacts_load(){
+  global $base_url;
+  $base_url = $GLOBALS['base_url'];
+}
+
+/**
+ * [estar get all contacts list]
+ * @param  [type] $node [description]s
+ * @return [type]       [description]
+ */
+function estar_contacts_form(){
+	//drupal_set_title("");
+  global $user,$base_url;
+  $form=array();
+
+   $form['first_name'] = array(
+       '#type' => 'textfield',
+       '#title' => t('First Name'),
+       '#attributes' => array('id'=>"first-id"),
+       '#required'=>TRUE,
+   );
+   $form['last_name'] = array(
+       '#type' => 'textfield',
+       '#title' => t('Last Name'),
+       '#attributes' => array('id'=>"last-id"),
+       '#required'=>TRUE,
+   );
+   $form['address'] = array(
+       '#type' => 'textfield',
+       '#title' => 'Address',
+       '#attributes' => array('id'=>"address-id"),
+       '#default_value' => $item->city,
+   );
+
+   $form['states'] = array(
+       '#prefix' => '<div class="select_section capacity_select_Section">',
+       '#suffix' => '</div>',
+       '#title' => t('State') ,
+       '#type' => 'select',
+       '#attributes' => array('id'=>"state-id"),
+       '#options' => array(
+           '' => "<--Select-->",
+           'Alabama' => "Alabama",
+           'Alaska' => "Alaska",
+           'Arizona' => "Arizona",
+           'Arkansas' => "Arkansas",
+           'California' => "California",
+           'Colorado' => "Colorado",
+           'Connecticut' => "Connecticut",
+           'District of Columbia' => "District of Columbia",
+           'Flocapacity_ida' => "Flocapacity_ida",
+           'Georgia' => "Georgia",
+           'Hawaii' => "Hawaii",
+           'Iowa' => "Iowa",
+           'Kansas' => "Kansas",
+           'Louisiana' => "Louisiana",
+           'Maine' => "Maine",
+           'Massachusetts' => "Massachusetts",
+           'Michigan' => "Michigan",
+           'Minnesota' => "Minnesota",
+           'Mississippi' => "Mississippi",
+           'Missouri' => "Missouri",
+           'Montana' => "Montana",
+           'Nebraska' => "Nebraska",
+           'Nevada' => "Nevada",
+           'New Hampshire' => "New Hampshire",
+           'New Jersey' => "New Jersey",
+           'New Mexico' => "New Mexico",
+           'New York' => "New York",
+           'North Carolina' => "North Carolina",
+           'North Dakota' => "North Dakota",
+           'Ohio' => "Ohio",
+           'Oklahoma' => "Oklahoma",
+           'Oregon' => "Oregon",
+           'Pennsylvania' => "Pennsylvania",
+           'Rhode Island' => "Rhode Island",
+           'South Carolina' => "South Carolina",
+           'South Dakota' => "South Dakota",
+           'Tennessee' => "Tennessee",
+           'Texas' => "Texas",
+           'Utah' => "Utah",
+           'Vermont' => "Vermont",
+           'Virginia' => "Virginia",
+           'Washington' => "Washington",
+           'West Virginia' => "West Virginia",
+           'Wisconsin' => "Wisconsin",
+           'Wyoming' => "Wyoming",
+           'Armed Forces (Americas)' => "Armed Forces (Americas)",
+           'Armed Forces (Europe, Canada, Middle East, Africa)' => "Armed Forces (Europe, Canada, Middle East, Africa)",
+           'Armed Forces (Pacific)' => "Armed Forces (Pacific)",
+           'American Samoa' => "American Samoa",
+           'Federated States of Micronesia' => "Federated States of Micronesia",
+           'Guam' => "Guam",
+           'Marshall Islands' => "Marshall Islands",
+           'Northern Mariana Islands' => "Northern Mariana Islands",
+           'Palau' => "Palau",
+           'Puerto Rico' => "Puerto Rico",
+           'Virgin Islands' => "Virgin Islands"
+       ) ,
+       '#default_value' => $item->states,
+   );
+
+   $form['city'] = array(
+       '#type' => 'textfield',
+       '#title' => 'City',
+       '#attributes' => array('id'=>"city-id"),
+       '#default_value' => $item->city,
+   );
+
+   $form['zip_code'] = array(
+       '#type' => 'textfield',
+       '#title' => t('Zipcode / Postal code') ,
+       '#element_validate' => array(
+           'element_validate_number'
+       ) ,
+       '#attributes' => array('id'=>"zip-id"),
+       '#maxlength' => 6,
+       '#default_value' => $item->zip_code,
+       '#suffix' => '</table>
+   ', // Don't forget to close the table rows, and finally the table.
+
+   );
+   $form['email'] = array(
+       '#type' => 'textfield',
+       '#title' => t('Email'),
+       '#attributes' => array('id'=>"em-id"),
+       '#required'=>TRUE,
+   );
+   $form['phone'] = array(
+       '#type' => 'textfield',
+       '#title' => t('Phone Number'),
+       '#attributes' => array('id'=>"ph-id"),
+       '#required'=>TRUE,
+   );
+  /* $form['primary-sector'] = array(
+       '#type' => 'textfield',
+       '#title' => t('Primary Sector'),
+       '#attributes' => array('id'=>"primary-sec-id"),
+   );*/
+
+
+   $form['organization'] = array(
+       '#type' => 'textfield',
+       '#title' => t('Company / Organization / Agency'),
+       '#attributes' => array('id'=>"org-id"),
+   );
+
+   $primary_data = getSectors($secID="6");
+
+   $form['classRowStart']=array('#markup'=>"<div class='row'>");
+
+   $form['primary-sector-list'] = array(
+		'#prefix' => '<div class="select_section capacity_select_Section">',
+       '#suffix' => '</div>',
+       '#type' => 'select',
+       '#title' => t('Primary Sectors'),
+       '#options' => $primary_data,
+       '#required'=>TRUE,
+       '#attributes' => array('id'=>"primary-sec-id"),
+   );
+
+   $sec_data = getSectors($secID="7");
+
+   $form['secondary-sector-list'] = array(
+   '#prefix' => '<div class="select_section capacity_select_Section">',
+       '#suffix' => '</div>',
+       '#type' => 'select',
+       '#title' => t('Secondary Sectors'),
+       '#options' => $sec_data,
+       '#attributes' => array('id'=>"secondary-sec-id"),
+   );
+
+$form['classRowEnd']=array('#markup'=>"</div>");
+
+
+   $form['hourly-time'] = array(
+       '#type' => 'radios',
+       '#title' => t('Can their hourly time be counted'),
+       '#options' => array('Yes'=>"Yes",'No'=>"No"),
+       '#required'=>TRUE,
+       '#attributes' => array('id'=>"hourly-t-id"),
+   );
+   $form['hour-description'] = array(
+       '#type' => 'textfield',
+       '#title' => t('If yes, please describe'),
+       '#attributes' => array('id'=>"hour-describe"),
+   );
+   $form['hour-value'] = array(
+       '#type' => 'textfield',
+       '#title' => t('Hourly value of this service'),
+       '#attributes' => array('id'=>"hour-val"),
+   );
+
+   $form['mediasectionToggle'] = array(
+       '#type' => 'fieldset',
+       '#title' => t('Publications / Media Outlets / Social Media') ,
+       '#collapsible' => true,
+       '#collapsed' => true,
+       '#attributes' => array(
+           'class' => array(
+               "planning-fieldset"
+           )
+       ) ,
+   );
+
+   $form['mediasectionToggle']['media-reach'] = array(
+       '#type' => 'textfield',
+       '#title' => t('Reach'),
+       '#attributes' => array('id'=>"reach-val"),
+   );
+
+   $form['mediasectionToggle']['media_zipcodes'] = array(
+       '#type' => 'textarea',
+       '#title' => t('Designated Marketing Area (DMA)') ,
+       '#default_value' => '',
+   );
+
+   $form['mediasectionToggle']['type-of-medias'] = array(
+         '#type' => 'radios',
+         '#title' => t('TYPE OF MEDIA') ,
+         '#options' => array(
+             'print' => "print",
+             'television' => "television",
+             'radio' => "radio",
+             'online' => "online",
+             'social media' => "social media",
+             'others' => "others"
+         ),
+         '#attributes'=>array("onclick"=>"showothersHiddenField(this)")
+     );
+
+     $form['mediasectionToggle']['others_hidden'] = array(
+       '#type' => 'textfield',
+       //'#title' => t('Please describe') ,
+       '#attributes'=>array("style"=>"display:none","id"=>"otherHidden")
+     );
+
+        $primarySectors = getSectors($secID="6");
+
+     $form['mediasectionToggle']['primary-sector'] = array(
+         '#type' => 'checkboxes',
+         '#prefix'=>'<div class="form-item form-type-checkbox form-item-primary-sector-select-all">
+                <div class="heading_tag"><h3>What sectors represent the target audience for this media outlet?</h3><div class="select_all_btn"><input id="selectall-tax-id" name="primary-select-all" value="" class="form-checkbox" type="checkbox">  <label class="option" for="edit-primary-sector-select-all">Select All </label></div></div>',
+          '#suffix'=>'</div>',
+         //'#title' => t('What sectors represent the target audience for this media outlet?'),
+         '#options'=>$primarySectors,
+         '#attributes' => array('id'=>"sect-id",'name'=>"primary-sector[]")
+     );
+     // $form['mediasectionToggle']['media-selectall-txt'] = array(
+     //     '#markup' => '<div class="form-item form-type-checkbox form-item-primary-sector-select-all">
+     //            <input id="sect-id" name="primary-sector[select_all]" value="select_all" class="form-checkbox" type="checkbox">  <label class="option" for="edit-primary-sector-select-all">Select All </label></div>',
+     // );
+
+     $form['mediasectionToggle']['notes_text'] = array(
+       '#type' => 'textfield',
+       '#title' => t('Notes') ,
+       '#attributes'=>array("id"=>"notesText")
+     );
+
+
+   $form['hid_username'] = array(
+       '#type' => 'hidden',
+       '#default_value' => (isset($user->id) && $user->id!="")?$user->id:"",
+       '#attributes'=>array('id'=>"hidUserName")
+   );
+
+
+   $form['next_btn_div_start2'] = array(
+       '#markup' => "<div class='assessment-nxt-btn implement-btn btn-separator'>"
+   );
+   $form['submit'] = array(
+       '#type' => 'submit',
+       '#value' => t('Create New Contact') ,
+   );
+   $form['next_btn_div_end2'] = array(
+       '#markup' => "</div>"
+   );
+
+   $form['next_btn_div_start3'] = array(
+       '#markup' => "<div class='assessment-nxt-btn implement-btn '>"
+   );
+   $form['submit2'] = array(
+     '#type' => 'button',
+     '#attributes' => array('onClick' => 'location.replace("'.$base_url.'/contact/list"); return false;'),
+     '#value' => t('Back to List page') ,
+   );
+   $form['next_btn_div_end3'] = array(
+       '#markup' => "</div>"
+   );
+
+
+   $form['submit-btn-separator'] = array(
+       '#markup' => '<br><br>'
+   );
+
+   return $form;
+
+}
+
+function estar_contacts_form_submit($form, &$form_state){ //echo "<pre>";print_r($_REQUEST);die;
+
+    global $user;
+      $contact_date_creation = date("F j, Y");
+
+      $primary_sector = "";
+      if (isset($_REQUEST['primary-sector']) && count($_REQUEST['primary-sector']) > 0)
+      {
+          for ($i = 0;$i < count($_REQUEST['primary-sector']);$i++)
+          {
+              $primary_sector['primary_sector'][$i] = $_REQUEST['primary-sector'][$i];
+          }
+      }
+      $primary_sector_data = serialize($primary_sector);//echo "<pre>";print_r($primary_sector);die;
+
+      $fullName=$form_state['input']['first_name']." ".$form_state['input']['last_name'];
+  $contact_id = db_insert('estar_contacts_details')->fields(array(
+    'user_id' => $user->uid,
+    'first_name' => $form_state['input']['first_name'],
+    'last_name' => $form_state['input']['last_name'],
+    'address' => $form_state['input']['address'],
+    'states' => $form_state['input']['states'],
+    'city' => $form_state['input']['city'],
+    'zip_code' => $form_state['input']['zip_code'],
+    'email' => $form_state['input']['email'],
+    'phone' => $form_state['input']['phone'],
+    //'primary_sector_text' => $form_state['input']['primary-sector'],
+    'organization' => $form_state['input']['organization'],
+    'primary_sector_select' => $form_state['input']['primary-sector-list'],
+    'secondary_sector_select' => $form_state['input']['secondary-sector-list'],
+    'hourly_time' => $form_state['input']['hourly-time'],
+      'hourly_description' => $form_state['input']['hour-description'],
+      'hourly_value' => $form_state['input']['hour-value'],
+      'reach_value' => $form_state['input']['media-reach'],
+      'zip_codes' => $form_state['input']['media_zipcodes'],
+      'media_type' => $form_state['input']['type-of-medias'],
+      'others_media' => (isset($form_state['input']['others_hidden']) && $form_state['input']['others_hidden']!="")?$form_state['input']['others_hidden']:"",
+      'primary_sector' => $primary_sector_data,
+      'notes' => $form_state['input']['notes_text'],
+      'created_at' => $contact_date_creation,
+      'updated_at' => $contact_date_creation
+  ))->execute();
+  if($contact_id!=''){
+    $form_state['redirect'] = 'contact/list';
+    drupal_set_message($fullName." Contact added successfully");
+  }
+
+}
+
+function contact_list_page(){
+  global $base_url;
+$contact_lists =db_query("SELECT * from {estar_contacts_details}")->fetchAll();
+   //echo "<pre>";print_r($mou_manager_lists);die;
+
+   $form['person_Conducting_starts'] = array(
+       '#markup' => "<div class='assessment-nxt-btn plus-sign'><a class='form-submit' href=$base_url/contact/add/> New Contact <i class='fa fa-plus-circle' aria-hidden='true'></i> </a></div><div id='person_Conducting_changehidden'>"
+   );
+
+   //echo "<pre>";print_r($personConduct_id_arr);die;
+if(isset($contact_lists) && count($contact_lists)>0){
+
+
+   $form['personConducting'] = array(
+       '#markup' => '<div class="responsive_table"></span></label><table id="ciaContactTab" class="sticky-enabled table-select-processed">
+ <thead><tr>
+ <th>First Name</th>
+ <th>Last Name</th>
+ <th>Email</th>
+ <th>Phone</th>
+ <th>Organization</th>
+ <th>Primary Sector</th>
+ <th>Actions</th>
+ </tr></thead>
+ <tbody>'
+   );
+   $usersRow = '';
+
+     foreach ($contact_lists as $mouUser)
+   { //echo "<pre>";print_r($mouUser);die;
+     if(isset($mouUser->primary_sector_select) && $mouUser->primary_sector_select!=''){
+          $primary_sector=get_taxonomy_term_name($mouUser->primary_sector_select);
+     }
+           $usersRow .= '<tr class="odd">
+             <td>' . (($mouUser->first_name != "") ? $mouUser->first_name : "") . '</td>
+             <td>' . (($mouUser->last_name != "") ? $mouUser->last_name : "") . '</td>
+             <td>' . (($mouUser->email != "") ? $mouUser->email : "") . '</td>
+             <td>' . (($mouUser->phone != "") ? $mouUser->phone : "") . '</td>
+             <td>' . (($mouUser->organization != "") ? $mouUser->organization : "") . '</td>
+             <td>' . (($primary_sector != "") ? $primary_sector : "") . '</td>
+             <td><a href="' . $base_url . '/contact/edit/' . $mouUser->contact_id . '"><i class="fa fa-pencil-square fa-lg" aria-hidden="true"></i></a>
+             <a href="' . $base_url . '/contact/delete/' . $mouUser->contact_id . '"><i class="fa fa-trash-o fa-lg del-contact" aria-hidden="true"></i></a></td>
+             </tr>';
+
+   }
+
+
+   $form['personConductingContent'] = array(
+       '#markup' => $usersRow,
+   );
+
+   $form['personConductingEnd'] = array(
+       '#markup' => '</tbody></table></div>'
+   );
+   $form['person_Conducting_end'] = array(
+       '#markup' => '</div><br><br>'
+   );
+ }else{
+   $form['personConducting'] = array(
+       '#markup' => '<div class="responsive_table"></span></label><table id="personConductingTab" class="sticky-enabled table-select-processed">
+ <thead><tr>
+ <th>First Name</th>
+ <th>Last Name</th>
+ <th>Email</th>
+ <th>Phone</th>
+ </tr></thead>
+ <tbody>'
+   );
+
+       $form['personConductingEnd1'] = array(
+           '#markup' => '<tr><td colspan="4">CIA manager list is empty.</td></tr>'
+       );
+       $form['personConductingEnd'] = array(
+           '#markup' => '</tbody></table></div>'
+       );
+
+ }
+
+   return $form;
+}
+
+
+function contact_edit_item_form(){
+	//drupal_set_title("");
+  global $user,$base_url;
+  $form=array();
+  $url = (isset($_SERVER['HTTPS']) ? "https" : "http") . "://$_SERVER[HTTP_HOST]$_SERVER[REQUEST_URI]";
+   $cId= basename($url);
+
+   if(isset($cId) && $cId!=""){
+       $contact_details = db_query("SELECT * FROM {estar_contacts_details} WHERE contact_id = " . $cId."")->fetchAll();
+   }//echo "<pre>";print_r($contact_details);die;
+
+if(isset($contact_details) && count($contact_details)>0){
+
+   $form['first_name'] = array(
+       '#type' => 'textfield',
+       '#title' => t('First Name'),
+        '#default_value'=>$contact_details[0]->first_name,
+       '#attributes' => array('id'=>"first-id"),
+       '#required'=>TRUE,
+   );
+   $form['last_name'] = array(
+       '#type' => 'textfield',
+       '#title' => t('Last Name'),
+       '#default_value'=>$contact_details[0]->last_name,
+       '#attributes' => array('id'=>"last-id"),
+       '#required'=>TRUE,
+   );
+   $form['address'] = array(
+       '#type' => 'textfield',
+       '#title' => 'Address',
+       '#default_value'=>$contact_details[0]->address,
+       '#attributes' => array('id'=>"address-id"),
+       '#default_value' => $item->city,
+   );
+
+   $form['states'] = array(
+       '#prefix' => '<div class="select_section capacity_select_Section">',
+       '#suffix' => '</div>',
+       '#title' => t('State') ,
+       '#type' => 'select',
+       '#default_value'=>$contact_details[0]->states,
+       '#attributes' => array('id'=>"state-id"),
+       '#options' => array(
+           '' => "<--Select-->",
+           'Alabama' => "Alabama",
+           'Alaska' => "Alaska",
+           'Arizona' => "Arizona",
+           'Arkansas' => "Arkansas",
+           'California' => "California",
+           'Colorado' => "Colorado",
+           'Connecticut' => "Connecticut",
+           'District of Columbia' => "District of Columbia",
+           'Flocapacity_ida' => "Flocapacity_ida",
+           'Georgia' => "Georgia",
+           'Hawaii' => "Hawaii",
+           'Iowa' => "Iowa",
+           'Kansas' => "Kansas",
+           'Louisiana' => "Louisiana",
+           'Maine' => "Maine",
+           'Massachusetts' => "Massachusetts",
+           'Michigan' => "Michigan",
+           'Minnesota' => "Minnesota",
+           'Mississippi' => "Mississippi",
+           'Missouri' => "Missouri",
+           'Montana' => "Montana",
+           'Nebraska' => "Nebraska",
+           'Nevada' => "Nevada",
+           'New Hampshire' => "New Hampshire",
+           'New Jersey' => "New Jersey",
+           'New Mexico' => "New Mexico",
+           'New York' => "New York",
+           'North Carolina' => "North Carolina",
+           'North Dakota' => "North Dakota",
+           'Ohio' => "Ohio",
+           'Oklahoma' => "Oklahoma",
+           'Oregon' => "Oregon",
+           'Pennsylvania' => "Pennsylvania",
+           'Rhode Island' => "Rhode Island",
+           'South Carolina' => "South Carolina",
+           'South Dakota' => "South Dakota",
+           'Tennessee' => "Tennessee",
+           'Texas' => "Texas",
+           'Utah' => "Utah",
+           'Vermont' => "Vermont",
+           'Virginia' => "Virginia",
+           'Washington' => "Washington",
+           'West Virginia' => "West Virginia",
+           'Wisconsin' => "Wisconsin",
+           'Wyoming' => "Wyoming",
+           'Armed Forces (Americas)' => "Armed Forces (Americas)",
+           'Armed Forces (Europe, Canada, Middle East, Africa)' => "Armed Forces (Europe, Canada, Middle East, Africa)",
+           'Armed Forces (Pacific)' => "Armed Forces (Pacific)",
+           'American Samoa' => "American Samoa",
+           'Federated States of Micronesia' => "Federated States of Micronesia",
+           'Guam' => "Guam",
+           'Marshall Islands' => "Marshall Islands",
+           'Northern Mariana Islands' => "Northern Mariana Islands",
+           'Palau' => "Palau",
+           'Puerto Rico' => "Puerto Rico",
+           'Virgin Islands' => "Virgin Islands"
+       )
+   );
+
+   $form['city'] = array(
+       '#type' => 'textfield',
+       '#title' => 'City',
+       '#attributes' => array('id'=>"city-id"),
+       '#default_value'=>$contact_details[0]->city,
+   );
+
+   $form['zip_code'] = array(
+       '#type' => 'textfield',
+       '#title' => t('Zipcode / Postal code') ,
+       '#element_validate' => array(
+           'element_validate_number'
+       ) ,
+       '#attributes' => array('id'=>"zip-id"),
+       '#maxlength' => 6,
+       '#default_value'=>$contact_details[0]->zip_code,
+       '#suffix' => '</table>
+   ', // Don't forget to close the table rows, and finally the table.
+
+   );
+   $form['email'] = array(
+       '#type' => 'textfield',
+       '#title' => t('Email'),
+       '#default_value'=>$contact_details[0]->email,
+       '#attributes' => array('id'=>"em-id"),
+       '#required'=>TRUE,
+   );
+   $form['phone'] = array(
+       '#type' => 'textfield',
+       '#title' => t('Phone Number'),
+       '#default_value'=>$contact_details[0]->phone,
+       '#attributes' => array('id'=>"ph-id"),
+       '#required'=>TRUE,
+   );
+
+   $form['organization'] = array(
+       '#type' => 'textfield',
+       '#title' => t('Company / Organization / Agency'),
+       '#default_value'=>$contact_details[0]->organization,
+       '#attributes' => array('id'=>"org-id"),
+   );
+
+   $primary_data = getSectors($secID="6");
+
+   $form['classRowStart']=array('#markup'=>"<div class='row'>");
+
+   $form['primary-sector-list'] = array(
+		'#prefix' => '<div class="select_section capacity_select_Section">',
+       '#suffix' => '</div>',
+       '#type' => 'select',
+       '#title' => t('Primary Sectors'),
+       '#options' => $primary_data,
+       '#default_value'=>$contact_details[0]->primary_sector_select,
+       '#required'=>TRUE,
+       '#attributes' => array('id'=>"primary-sec-id"),
+   );
+
+   $sec_data = getSectors($secID="7");
+
+   $form['secondary-sector-list'] = array(
+   '#prefix' => '<div class="select_section capacity_select_Section">',
+       '#suffix' => '</div>',
+       '#type' => 'select',
+       '#default_value'=>$contact_details[0]->secondary_sector_select,
+       '#title' => t('Secondary Sectors'),
+       '#options' => $sec_data,
+       '#attributes' => array('id'=>"secondary-sec-id"),
+   );
+
+$form['classRowEnd']=array('#markup'=>"</div>");
+
+
+   $form['hourly-time'] = array(
+       '#type' => 'radios',
+       '#title' => t('Can their hourly time be counted'),
+       '#options' => array('Yes'=>"Yes",'No'=>"No"),
+       '#required'=>TRUE,
+       '#default_value'=>$contact_details[0]->hourly_time,
+       '#attributes' => array('id'=>"hourly-t-id"),
+   );
+   $form['hour-description'] = array(
+       '#type' => 'textfield',
+       '#title' => t('If yes, please describe'),
+       '#default_value'=>$contact_details[0]->hourly_description,
+       '#attributes' => array('id'=>"hour-describe"),
+   );
+   $form['hour-value'] = array(
+       '#type' => 'textfield',
+       '#title' => t('Hourly value of this service'),
+       '#default_value'=>$contact_details[0]->hourly_value,
+       '#attributes' => array('id'=>"hour-val"),
+   );
+
+   $form['mediasectionToggle'] = array(
+       '#type' => 'fieldset',
+       '#title' => t('Publications / Media Outlets / Social Media') ,
+       '#collapsible' => true,
+       //'#collapsed' => true,
+       '#attributes' => array(
+           'class' => array(
+               "planning-fieldset"
+           )
+       ) ,
+   );
+
+   $form['mediasectionToggle']['media-reach'] = array(
+       '#type' => 'textfield',
+       '#title' => t('Reach'),
+       '#default_value'=>$contact_details[0]->reach_value,
+       '#attributes' => array('id'=>"reach-val"),
+   );
+
+   $form['mediasectionToggle']['media_zipcodes'] = array(
+       '#type' => 'textarea',
+       '#title' => t('Zip codes') ,
+       '#default_value'=>$contact_details[0]->zip_codes,
+   );
+
+   $form['mediasectionToggle']['type-of-medias'] = array(
+         '#type' => 'radios',
+         '#title' => t('TYPE OF MEDIA') ,
+         '#options' => array(
+             'print' => "print",
+             'television' => "television",
+             'radio' => "radio",
+             'online' => "online",
+             'social media' => "social media",
+             'others' => "others"
+         ),
+         '#default_value'=>$contact_details[0]->media_type,
+         '#attributes'=>array("onclick"=>"showothersHiddenField(this)")
+     );
+
+   if(isset($contact_details[0]->media_type) && $contact_details[0]->media_type=="others"){
+     $form['mediasectionToggle']['others_hidden'] = array(
+       '#type' => 'textfield',
+       '#default_value'=>$contact_details[0]->others_media,
+       '#attributes'=>array("id"=>"otherHidden")
+     );
+   }else{
+       $form['mediasectionToggle']['others_hidden'] = array(
+         '#type' => 'textfield',
+         //'#title' => t('Please describe') ,
+         '#attributes'=>array("style"=>"display:none","id"=>"otherHidden")
+       );
+  }
+
+   $primarySectors = getSectors($secID="6");
+
+   if(isset($contact_details[0]->primary_sector) &&  $contact_details[0]->primary_sector!=""){
+        $primarySectorData=unserialize($contact_details[0]->primary_sector);//echo "<pre>";print_r($primarySectorData);die;
+   }
+
+
+$form['mediasectionToggle']['primary-sector'] = array(
+    '#type' => 'checkboxes',
+    '#prefix'=>'<div class="form-item form-type-checkbox form-item-primary-sector-select-all">
+            <div class="heading_tag"><h3>What sectors represent the target audience for this media outlet?</h3><div class="select_all_btn"><input id="selectall-tax-id" name="primary-select-all" value="" class="form-checkbox" type="checkbox">  <label class="option" for="edit-primary-sector-select-all">Select All </label></div></div>',
+     '#suffix'=>'</div>',
+    '#options'=>$primarySectors,
+    '#attributes' => array('id'=>"sect-id",'name'=>"primary-sector[]"),
+    '#default_value'=>$primarySectorData['primary_sector']
+);
+
+$form['mediasectionToggle']['notes_text'] = array(
+  '#type' => 'textfield',
+  '#title' => t('Notes') ,
+  '#attributes'=>array("id"=>"notesText"),
+  '#default_value'=> $contact_details[0]->notes
+);
+
+   $form['hid_contact_id'] = array(
+       '#type' => 'hidden',
+       '#default_value' => (isset($contact_details[0]->contact_id) && $contact_details[0]->contact_id!="")?$contact_details[0]->contact_id:""
+   );
+
+   $form['hid_username'] = array(
+       '#type' => 'hidden',
+       '#default_value' => (isset($user->id) && $user->id!="")?$user->id:"",
+       '#attributes'=>array('id'=>"hidUserName")
+   );
+
+
+   $form['next_btn_div_start2'] = array(
+       '#markup' => "<div class='assessment-nxt-btn implement-btn btn-separator'>"
+   );
+   $form['submit'] = array(
+       '#type' => 'submit',
+       '#value' => t('Update Contact') ,
+   );
+   $form['next_btn_div_end2'] = array(
+       '#markup' => "</div>"
+   );
+
+   $form['next_btn_div_start3'] = array(
+       '#markup' => "<div class='assessment-nxt-btn implement-btn '>"
+   );
+   $form['submit2'] = array(
+     '#type' => 'button',
+     '#attributes' => array('onClick' => 'location.replace("'.$base_url.'/contact/list"); return false;'),
+       '#value' => t('Cancel') ,
+   );
+   $form['next_btn_div_end3'] = array(
+       '#markup' => "</div>"
+   );
+
+   $form['submit-btn-separator'] = array(
+       '#markup' => '<br><br>'
+   );
+
+ }else{
+         $form['invalid-team-list']=array('#markup'=>'<tr><td colspan="3">Contacts not found.</td></tr>');
+ }
+
+   return $form;
+
+}
+
+function contact_edit_item_form_submit($form, &$form_state){ //echo "<pre>";print_r($form_state);die;
+
+    global $user;
+  $contact_date_creation = date("F j, Y");
+  $cID=$_REQUEST['hid_contact_id'];
+
+  $primary_sector = "";
+  if (isset($_REQUEST['primary-sector']) && count($_REQUEST['primary-sector']) > 0)
+  {
+      for ($i = 0;$i < count($_REQUEST['primary-sector']);$i++)
+      {
+          $primary_sector['primary_sector'][$i] = $_REQUEST['primary-sector'][$i];
+      }
+  }
+  $primary_sector_data = serialize($primary_sector);
+
+  $fullName=$form_state['input']['first_name']." ".$form_state['input']['last_name'];
+  $contact_id = db_update('estar_contacts_details')->fields(array(
+    'user_id' => $user->uid,
+    'first_name' => $form_state['input']['first_name'],
+    'last_name' => $form_state['input']['last_name'],
+    'address' => $form_state['input']['address'],
+    'states' => $form_state['input']['states'],
+    'city' => $form_state['input']['city'],
+    'zip_code' => $form_state['input']['zip_code'],
+    'email' => $form_state['input']['email'],
+    'phone' => $form_state['input']['phone'],
+    //'primary_sector_text' => $form_state['input']['primary-sector'],
+    'organization' => $form_state['input']['organization'],
+    'primary_sector_select' => $form_state['input']['primary-sector-list'],
+    'secondary_sector_select' => $form_state['input']['secondary-sector-list'],
+    'hourly_time' => $form_state['input']['hourly-time'],
+      'hourly_description' => $form_state['input']['hour-description'],
+      'hourly_value' => $form_state['input']['hour-value'],
+      'reach_value' => $form_state['input']['media-reach'],
+      'zip_codes' => $form_state['input']['media_zipcodes'],
+      'media_type' => $form_state['input']['type-of-medias'],
+      'others_media' => (isset($form_state['input']['others_hidden']) && $form_state['input']['others_hidden']!="")?$form_state['input']['others_hidden']:"",
+      'primary_sector'=>$primary_sector_data,
+      'notes'=> $form_state['input']['notes_text'],
+      'created_at' => $contact_date_creation,
+      'updated_at' => $contact_date_creation,
+  ))->condition('contact_id', $cID)->execute();
+  if($contact_id!=''){
+    $form_state['redirect'] = 'contact/list';
+    drupal_set_message($fullName." Contact updated successfully");
+  }
+
+}
+
+
+function contact_delete_item_form($form,&$form_state){
+    $url = (isset($_SERVER['HTTPS']) ? "https" : "http") . "://$_SERVER[HTTP_HOST]$_SERVER[REQUEST_URI]";
+     $cId= basename($url);
+     if(isset($cId) && $cId!=""){
+           $del_res = db_delete('estar_contacts_details')
+                          ->condition('contact_id', $cId)
+                          ->execute();
+      }
+      if(isset($del_res) && $del_res!=""){
+          drupal_goto('contact/list');
+      }else{
+        return $form;
+      }
+
+}
+
+function getSectors($secID){
+  return $primary_data = db_select('taxonomy_term_data', 'c')
+   ->fields('c',array('tid','name'))
+   ->condition('vid',$secID,'=')
+   ->execute()
+   ->fetchAllKeyed();
+}
+
+// function get_taxonomy_term_name($tid) {
+// 	$term_data = taxonomy_term_load($tid);
+// 	$term_name = $term_data->name;
+// 	return $term_name;
+// }
+
+?>

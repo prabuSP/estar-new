@@ -1,0 +1,178 @@
+<?php
+
+/**
+ * @file
+ * implemetation installation functions.
+ */
+
+/**
+ * Implementation of hook_install().
+ */
+function mou_manager_schema() {
+
+       $schema['mou_manager_details'] = array(
+        'description' => 'The table for storing the MOU manager details.',
+        'fields' => array(
+
+                'mou_manager_id' => array(
+                'description' => 'The unique Row ID.',
+                'type' => 'serial',
+                'not null' => TRUE,
+                'unsigned' => TRUE,
+            ),
+            'inviter_id' => array(
+                      'description' => 'Inviter User Id',
+                      'type' => 'int',
+                      'length' => 10,
+
+                  ),
+
+            'first_name' => array(
+                'description' => 'First Name',
+                'type' => 'varchar',
+                'length' => 255,
+            ),
+            'last_name' => array(
+                'description' => 'Last Name',
+                'type' => 'varchar',
+                'length' => 255,
+            ),
+            'email' => array(
+                'description' => 'Email',
+                'type' => 'varchar',
+                'length' => 255,
+            ),
+            'phone' => array(
+                'description' => 'Phone Number',
+                'type' => 'varchar',
+                'length' => 255,
+            ),
+            'position' => array(
+                'description' => 'Position/Title',
+                'type' => 'varchar',
+                'length' => 255,
+            ),
+            'sector' => array(
+                'description' => 'Sector',
+                'type' => 'varchar',
+                'length' => 255,
+            ),
+            'website_address' => array(
+                'description' => 'Website Address',
+                'type' => 'varchar',
+                'length' => 255,
+              ),
+
+                'address_1' => array(
+                'description' => 'Address 2',
+                'type' => 'varchar',
+                'length' => 255,
+
+            ),
+            'city' => array(
+                'description' => 'city',
+                'type' => 'varchar',
+                'length' => 255,
+            ),
+
+                'states' => array(
+                'description' => 'states',
+                'type' => 'varchar',
+                'length' => 255,
+
+            ),
+              'zip_code' => array(
+                'description' => 'zip code',
+                'type' => 'varchar',
+                'length' => 255,
+
+            ),
+            'organization' => array(
+              'description' => 'Organization',
+              'type' => 'varchar',
+              'length' => 255,
+
+          ),
+            'year_joined' => array(
+                'description' => 'Year First Joined',
+                'type' => 'varchar',
+                'length' => 255,
+
+            ),
+
+                'program' => array(
+                'description' => 'Program Name',
+                'type' => 'varchar',
+                'length' => 255,
+
+            ),
+
+                'type_of_mou' => array(
+                'description' => 'MOU Type',
+                'type' => 'varchar',
+                'length' => 255,
+
+            ),
+
+                'mou_text' => array(
+                'description' => 'MOU text',
+                'type' => 'text',
+                'size' => 'big',
+
+            ),
+
+                'sender_email' => array(
+                'description' => 'Sender Email',
+                'type' => 'varchar',
+                'length' => 225,
+
+            ),
+            'sender_bcc' => array(
+            'description' => 'Sender Bcc',
+            'type' => 'varchar',
+            'length' => 225,
+
+        ),
+                'subject' => array(
+                'description' => 'Mail Subject',
+                'type' => 'varchar',
+                'length' => 225,
+
+            ),
+               'mail_body' => array(
+                'description' => 'Mail Body Content',
+                'type' => 'varchar',
+                'length' => 225,
+
+            ),
+            'user_id' => array(
+                      'description' => 'User Id',
+                      'type' => 'int',
+                      'length' => 10,
+
+                  ),
+                'signature' => array(
+                'description' => 'Attachments notes',
+                'type' => 'int',
+                'length' => 10,
+
+            ),
+            'created_at' => array(
+                'description' => 'Created Date',
+                'type' => 'varchar',
+                'length' => 255,
+
+            ),
+                'updated_at' => array(
+                'description' => 'Updated Date',
+                'type' => 'varchar',
+                'length' => 255,
+
+            ),
+        ),
+
+        'primary key' => array('mou_manager_id'),
+    );
+
+    return $schema;
+}

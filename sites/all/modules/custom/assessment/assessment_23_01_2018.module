@@ -1,0 +1,1763 @@
+<?php
+
+function assessment_menu() {
+  $items = array();
+  
+  $items['assessment-details-form'] = array( //this creates a URL that will call this form at "docroot/new_assessment"
+    'title' => 'Assessment', //page title
+    'page callback' => 'drupal_get_form', //this is the function that will be called when the page is accessed.  for a form, use drupal_get_form
+    'page arguments' => array('assessment_details_form'), //put the name of the form here
+    'access callback' => TRUE
+  );
+  
+  $items['new-assessment'] = array( //this creates a URL that will call this form at "docroot/new_assessment"
+    'title' => 'New Assessment Form', //page title
+    'page callback' => 'drupal_get_form', //this is the function that will be called when the page is accessed.  for a form, use drupal_get_form
+    'page arguments' => array('new_assessment'), //put the name of the form here
+    'access callback' => TRUE
+  );
+
+  $items['assessment-form'] = array( 
+    'title' => 'Assessment Form', //page title
+    'description' => 'The Assessment module is where you will enter background statistics and data related to the program',
+    'page callback' => 'drupal_get_form', //this is the function that will be called when the page is accessed.  for a form, use drupal_get_form
+    'page arguments' => array('assessment_form'), //put the name of the form here
+    'access callback' => TRUE
+  );
+  
+  $items['assessment-details'] = array( 
+    'title' => 'Assessment Details', //page title
+    'description' => 'The Assessment Details will get all fields input values from form submit',
+    'page callback' => 'drupal_get_form', //this is the function that will be called when the page is accessed.  for a form, use drupal_get_form
+    'page arguments' => array('assessment_details'), //put the name of the form here
+    'access callback' => TRUE
+  );
+  
+  $items['substance-details'] = array( 
+    'title' => 'Indicator Details', //page title
+    'page callback' => 'drupal_get_form', //this is the function that will be called when the page is accessed.  for a form, use drupal_get_form
+    'page arguments' => array('substance_details'), //put the name of the form here
+    'access callback' => TRUE
+  );
+  
+  $items['amend-data-point'] = array( //this creates a URL that will call this form at "docroot/new_assessment"
+    'title' => 'Amend Data Point Details', //page title
+    'page callback' => 'drupal_get_form', //this is the function that will be called when the page is accessed.  for a form, use drupal_get_form
+    'page arguments' => array('assessment_details_form'), //put the name of the form here
+    'access callback' => TRUE
+  );
+  
+  $items['append-data-point'] = array( //this creates a URL that will call this form at "docroot/new_assessment"
+    'title' => 'Append Data Point Details', //page title
+    'page callback' => 'drupal_get_form', //this is the function that will be called when the page is accessed.  for a form, use drupal_get_form
+    'page arguments' => array('assessment_details_form'), //put the name of the form here
+    'access callback' => TRUE
+  );
+  
+  return $items;
+}
+
+function assessment_details_form(){
+	
+	global $user;
+	//$assessment_data_lists = db_query("SELECT * FROM {assessment_details} WHERE uid = ".$user->uid)->fetchAll();
+	$query = db_select('assessment_details','a');
+	$query->fields('a', array('assessment_id','title','collection_period','date_of_data'));
+	$query->groupBy('a.title');
+	$query->orderBy('a.title','ASC');
+	$assessment_data_lists = $query->execute()->fetchAll();//echo "<pre>";print_r($assessment_data_lists);die;
+	
+	$assessmentListItems="<div id='assessmentDataLists'>
+							<h3>Assessment Title</h3><ul>";
+						
+	if(isset($assessment_data_lists) && count($assessment_data_lists)>0){ 
+		
+			foreach($assessment_data_lists as $dataKey=>$dataItem){ 
+				
+			if($dataItem->title!=""){
+				 $asTitle=strstr($dataItem->title,' ',true);
+			}
+			if(is_url_exist(file_create_url(path_to_theme().'/images/assessment/'.$asTitle.'.png'))){
+					$imgurl = file_create_url(path_to_theme().'/images/assessment/'.$asTitle.'.png');
+		    }else{
+				   $imgurl = file_create_url(path_to_theme().'/images/assessment/default.png');
+			}
+				
+				$assessmentListItems .='<li><a href="assessment-details?assessment_id='.$dataItem->assessment_id.'"><img src='.$imgurl.' class="white_img"><span>'.$dataItem->title.'</span></a></li>';
+				//$assessmentListItems .='<li>'.$dataItem->collection_period.'</li>';
+				//$assessmentListItems .='<li>'.$dataItem->date_of_data.'</li>';
+			}
+	}else{
+		
+		$assessmentListItems.='<tr><td colspan="3">No Assessment list found.</td></tr>';   
+			
+	}
+	
+	$assessmentListItems.="</ul></div>";
+	
+	if(isset($_GET['responce-msg']) && $_GET['responce-msg']!=''){
+			$form['response-msg-status']=array(
+				'#markup'=>'<div class="messages status">
+		<h2 class="element-invisible">Status message</h2>
+		<strong>'.$_GET['responce-msg'].'</strong> Assessment details successfully saved.</div>'
+		   );
+    } else if(isset($_GET['update-msg']) && $_GET['update-msg']!=''){
+			$form['response-msg-status']=array(
+				'#markup'=>'<div class="messages status">
+		<h2 class="element-invisible">Status message</h2>
+		<strong>'.$_GET['update-msg'].'</strong> Assessment details updated successfully.</div>'
+		   );
+    }
+	
+	$form['Assessment-title2'] = array(
+  '#markup' => '<div class="assessment_page">' 
+  );
+
+	 $new_img_icon = file_create_url(path_to_theme().'/images/new_icon.png');
+   $form['assessment_details_block_start']=array(
+		'#markup'=>'<div class="field-items"><div class="field-item even" id="first"><p>The Assessment module is where you will enter background statistics and data related to the program.</p>
+	<h5>How to</h5>
+ <p>To enter statistics or data click the link below click the link below to either add data to an existing data set or click "new" to start a new data set.</p>
+<h3>Links</h3>
+<h3>Amend (edit) an Existing Data Point / Append (add new) a New Data Point</h3>
+<p style="margin-left:20px;">
+'.$assessmentListItems.'
+</p>
+<div class="assessment-nxt-btn"><a href="new-assessment" target="_blank"><img src='.$new_img_icon.' class="white_img"><span>New Data Set</span></a></div>
+</div></div><br><br>'
+		         		
+   );
+   
+   return $form;
+	
+	$form['Assessment-title-2'] = array(
+  '#markup' => '</div>'
+  );
+}
+
+
+
+function new_assessment($form, &$form_state) {
+
+	/* vid '2' means Datasource Texanomy terms which is configured in Drupal admin */
+	
+$datasource_data = db_query("SELECT name, name FROM {taxonomy_term_data} WHERE vid = 2")->fetchAllKeyed();
+
+  $datasource_data['Custom']="Custom";
+  $form['Assessment-title'] = array(
+  '#markup' => '<div class="assessment_page">'
+  );
+  
+	$form['substance_option'] = array(
+	'#type' => 'radios',
+	'#title' => t('What Substance are you Tracking?'),
+	'#required'=>TRUE,
+	'#options' => $datasource_data,
+	'#attributes'=>array("onclick"=>"showCustomTextfield(this)")
+	);
+
+	$form['substance_custom'] = array(
+		'#type' => 'textfield',
+		'#attributes'=>array("style"=>"display:none","id"=>"subCustom")
+	);
+	
+	$form['next_btn_div_start']=array('#markup'=>"<div class='assessment-nxt-btn'>");
+	  $form['submit_button'] = array(
+		'#type' => 'submit',
+		'#value' => t('Next')
+	  );
+	$form['next_btn_div_end']=array('#markup'=>"</div>");
+	  
+	$form['Assessment-title-1'] = array(
+  '#markup' => '</div>'
+  );
+			
+  
+	  $form['end_break']=array(
+			'#markup'=>'<br><br>'
+	  );
+	 
+  return $form;
+	
+	
+}
+
+
+function assessment_form($form, &$form_state) {
+  
+   //echo "<pre>";print_r($_GET);die;
+   if(isset($_GET['q'])){
+		$getValues=explode('/',$_GET['q']);
+   }
+   //echo $getValues[1];die;
+   
+   $consequence_indicator="<h3 class='selection_heading'>Indicator Chosen: ".$getValues[1]."</h3>";
+   //$consequence_indicator.="<strong>Consumption Indicator: ".$getValues[2]."</strong><br>";
+   //$consequence_indicator.="<strong>Social Indicator: ".$getValues[3]."</strong><br>";
+  
+  $form['Assessment-title3'] = array(
+  '#markup' => '<div class="assessment_page">' 
+  );
+  
+  	$form["final_assessment_mark_up"]=array(
+			"#markup"=>$consequence_indicator
+	);
+	
+/* vid '34' means Datasource Texanomy terms which is configured in Drupal admin */
+	
+$datasource_data = db_query("SELECT name, name FROM {taxonomy_term_data} WHERE vid = 34")->fetchAllKeyed();
+
+  $datasource_data['Custom']="Custom";
+  
+$form['data_source_options'] = array(
+'#type' => 'radios',
+'#title' => t('Data Source'),
+'#required'=>TRUE,
+'#options' => $datasource_data,
+'#attributes'=>array("onclick"=>"showSourceTextfield(this)")
+);
+
+$form['data_custom'] = array(
+		'#type' => 'textfield',
+		'#attributes'=>array("style"=>"display:none","id"=>"dataCustom")
+	);
+	
+/* vid '35' means Metric Rates Texanomy terms which is configured in Drupal admin */
+	
+$metric_data = db_query("SELECT name, name FROM {taxonomy_term_data} WHERE vid = 35")->fetchAllKeyed();
+
+ foreach($metric_data as $metricKey=>$metricVal){ 
+       if($metricVal=='"/#"/ - Number'){
+			$metric_data[$metricKey]=str_replace(array('/','"'),"",$metricVal);
+	   }else{
+			$metric_data[$metricKey]=$metricVal;
+	   }
+ }
+
+$form['metric'] = array(
+'#type' => 'radios',
+'#title' => t('Metric'),
+'#required'=>TRUE,
+'#options' => $metric_data,
+);
+
+$form['collection_period'] = array(
+'#type' => 'radios',
+'#title' => t('Collection Period'),
+'#required'=>TRUE,
+'#options' => array('Annually'=>"Annually", 'Quarterly'=>"Quarterly", 'Monthly'=>"Monthly"),
+);
+
+/*$form['date_collection_data'] = array(
+'#type' => 'textfield',
+'#title' => t('Date Collection Started'),
+'#required'=>TRUE,
+);*/
+
+$form['gender'] = array(
+'#type' => 'radios',
+'#title' => t('Gender'),
+'#required'=>TRUE,
+'#options' => array('Yes'=>"Yes", 'No'=>"No"),
+);
+
+$form['ethinicity'] = array(
+'#type' => 'radios',
+'#title' => t('Ethinicity'),
+'#required'=>TRUE,
+'#options' => array('Yes'=>"Yes", 'No'=>"No"),
+);
+
+/* vid '36' means Population Texanomy terms which is configured in Drupal admin */
+	
+$population_data = db_query("SELECT name, name FROM {taxonomy_term_data} WHERE vid = 36")->fetchAllKeyed();
+
+  $population_data['Custom']="Custom";
+  
+   $form['overall_population_block_start']=array(
+		'#markup'=>"<div id='overallPopulation'><h3>Population</h3>"
+   );
+  
+
+$form['population'] = array(
+'#type' => 'checkboxes',
+'#title' => t('Grade'),
+'#options' => $population_data,
+//'#options' => array('12'=>"12", '11'=>"11", '10'=>"10", '9'=>"9", '8'=>"8", '7'=>"7", '6'=>"6", '5'=>"5", 'College Freshman'=>"College Freshman", 'College Sophmore'=>"College Sophmore", 'College Senior'=>"College Senior", 'College Junior'=>"College Junior", 'Post Graduate'=>"Post Graduate", 'Custom'=>"Custom"),
+/*'#attributes'=>array('id'=>'gradePopId','class'=>'labelGreyBG'')
+
+'#attributes'=>array('id'=>'gradePopId','class=>labelGreyBG')*/
+
+'#attributes' => array('class' => array('labelGreyBG')),
+  '#attributes' => array('id' => array('gradePopId')),
+ 
+);
+
+$form['population_custom'] = array(
+		'#type' => 'textfield',
+		'#attributes' => array('style'=>"width:15%;display:none;","id"=>"popCustom"),
+	);
+	
+	
+/* vid '37' means Age Group Texanomy terms which is configured in Drupal admin */
+	
+$ageGroup_data = db_query("SELECT name, name FROM {taxonomy_term_data} WHERE vid = 37")->fetchAllKeyed();
+
+  $ageGroup_data['Custom']="Custom";
+  
+	$form['age_group'] = array(
+'#type' => 'checkboxes',
+'#title' => t('Age Group'),
+'#options' => $ageGroup_data,
+'#attributes'=>array("id"=>"agePopId")
+);
+
+	$form['age_group_custom'] = array(
+		'#type' => 'textfield',
+		'#attributes' => array('style'=>"width:15%;display:none;","id"=>"ageCustom"),
+	);
+	
+	
+/* vid '38' means Age Group Texanomy terms which is configured in Drupal admin */
+	
+$siteCampus_data = db_query("SELECT name, name FROM {taxonomy_term_data} WHERE vid = 38")->fetchAllKeyed();
+
+  $siteCampus_data['Custom']="Custom";
+  
+
+	$form['site_or_campus'] = array(
+'#type' => 'checkboxes',
+'#title' => t('Site or Campus'),
+'#options' => $siteCampus_data,
+//'#options' => array('Middle School (All Grades)'=>"Middle School (All Grades)", 'High School (All Grades)'=>"High School (All Grades)", 'College / University (All levels)'=>"College / University (All levels)", 'City'=>"City", 'County'=>"County", 'State'=>"State", 'Parish'=>"Parish", 'Custom'=>"Custom"),
+'#attributes'=>array("id"=>"sitePopId")
+);
+
+	$form['site_or_campus_custom'] = array(
+		'#type' => 'textfield',
+		'#attributes' => array('style'=>"width:15%;display:none;","id"=>"siteCustom"),
+	);
+	
+    
+   $form['overall_population_block_end']=array(
+		'#markup'=>"</div>"
+   );
+
+   $form['next_btn_div_start']=array('#markup'=>"<div class='assessment-nxt-btn'>");
+	  $form['submit_button'] = array(
+		'#type' => 'submit',
+		'#value' => t('Next'),
+	  );
+  $form['next_btn_div_end']=array('#markup'=>"</div>");
+  
+  $form['Assessment-title-3'] = array(
+  '#markup' => '</div>'
+  );
+  
+  $form['end_break']=array(
+		'#markup'=>'<br><br>'
+  );
+  
+  $form['#method'] = 'post';
+  
+  //$form['#submit'][] = 'assessment_details'; 
+ 
+  return $form;
+}
+
+function assessment_details($form, &$form_state){
+				
+	 global $user; 
+	 
+	 $form['Assessment-title4'] = array(
+  '#markup' => '<div class="assessment_page">' 
+  );
+  
+	if(isset($_REQUEST['hidAmendSaveVal']) && $_REQUEST['hidAmendSaveVal']!=''){
+	  	    
+		$asse_id=$_REQUEST['assessment_id'];
+		$metric=$_REQUEST['hidMetric'];
+		$collectionPeriod=$_REQUEST['hidcollectionPeriod'];
+		$gender=$_REQUEST['hidGender'];
+		$ethinicity=$_REQUEST['hidEthinicity'];
+		$populationDetails=$_REQUEST['hidpopulation'];
+		$ageGroupDetails=$_REQUEST['hidAge'];
+		$campusDetails=$_REQUEST['hidCampus'];
+		if(isset($_REQUEST['hidDataOfData']) && $_REQUEST['hidDataOfData']!=''){
+			$dateOfData=$_REQUEST['hidDataOfData'];
+	    }else{
+			$dateOfData=$_REQUEST['date_of_data'];
+		}
+		//echo $dateOfData;die;
+		 $amend_data_lists = db_select('assessment_details', 'n')
+					->fields('n')
+					->condition('date_of_data', $dateOfData,'=')
+					->condition('assessment_id', $asse_id,'=')
+					->execute()
+					->fetchAll();
+		  
+	  if(isset($amend_data_lists) && count($amend_data_lists)>0){
+		 
+		 $assessment_id=$amend_data_lists[0]->assessment_id;
+		 
+		 $amend_rate_data_lists = db_select('assessment_rate_details', 'n')
+					->fields('n')
+					->condition('assessment_id', $assessment_id,'=')
+					->execute()
+					->fetchAll();
+		//echo "<pre>";print_r($amend_rate_data_lists);die;
+        $assessmentTitle=$_REQUEST['hidassessmentTitle'];
+		$assessmentDetailsHtml="<div class='assessment_specification'><div class='assessment_contetnt'><div class='left_section'><strong>Title: </strong> </div><div class='right_section'> <strong> ".$assessmentTitle."</strong></div></div>";
+		$assessmentDetailsHtml.="<div class='assessment_contetnt'><div class='left_section'><strong>Metric: </strong> </div><div class='right_section'> <strong>".$metric."</strong></div></div>";
+		$assessmentDetailsHtml.="<div class='assessment_contetnt'><div class='left_section'><strong>Collection Period: </strong> </div><div class='right_section'> <strong>".$collectionPeriod."</strong></div></div>";
+		$assessmentDetailsHtml.="<div class='assessment_contetnt'><div class='left_section'><strong>Gender: </strong> </div><div class='right_section'> <strong> ".$gender."</strong></div></div>";
+		$assessmentDetailsHtml.="<div class='assessment_contetnt'><div class='left_section'><strong>Ethinicity: </strong> </div><div class='right_section'> <strong> ".$ethinicity."</strong></div></div>";
+		if($populationDetails!=""){
+			$assessmentDetailsHtml.="<div class='assessment_contetnt'><div class='left_section'><strong>Grade Population: </strong> </div><div class='right_section'> <strong> ".rtrim($populationDetails,",")."</strong></div></div>";
+		}
+		if($ageGroupDetails!=""){
+			$assessmentDetailsHtml.="<div class='assessment_contetnt'><div class='left_section'><strong>Age Group Population: </strong> </div><div class='right_section'> <strong> ".rtrim($ageGroupDetails,",")."</strong></div></div>";
+		}
+		if($campusDetails!=""){
+			$assessmentDetailsHtml.="<div class='assessment_contetnt'><div class='left_section'><strong>Site or Campus Population:</strong> </div><div class='right_section'> <strong> ".rtrim($campusDetails,",")."</strong></div></div>";
+		}
+    
+    $assessmentDetailsHtml.="<div class='assessment_contetnt'><div class='left_section'><strong>Date of Data: </strong> </div><div class='right_section'> <strong> ".$dateOfData."</strong></div></div></div>";
+    
+    $form["assessment_hid_mark_up"]=array(
+			"#markup"=>$assessmentDetailsHtml
+	);
+	$widthStyle='style="width:100%;"';
+	if($gender=="Yes"){
+		$genderColumn="<td><strong>Rate male</strong></td>
+			<td><strong>Sample size (male)</strong></td>
+			<td><strong>Rate female</strong></td>
+			<td><strong>Sample size (female)</strong></td>";
+	}
+	
+	if($ethinicity=="Yes"){
+		$ethinicityColumn="<td><strong>Rate white</strong></td>
+			<td><strong>Rate AA</strong></td>
+			<td><strong>Rate Hisp</strong></td>
+			<td><strong>Rate AI</strong></td>
+			<td><strong>Rate Asian</strong></td>
+			<td><strong>Rate other</strong></td>";
+	}
+	
+		$form['table_head'] =array("#markup"=> '
+			<table style="width:auto;'.$tablHide.'">
+			<thead>
+			<tr>
+			<td><strong>Population</strong></td>
+			<td><strong>Rate             Selected</strong></td>
+			<td><strong>Sample size: Rate selected in 4a</strong></td>
+			'.$genderColumn.'
+			'.$ethinicityColumn.'</tr>
+			</thead>
+			<tbody>
+		');
+		
+		if($metric=="rate @ 100" || $metric=="rate @ 1000" || $metric=="rate @ 10,000" || $metric=="rate @ 100,000" || $metric=="rate @ 1000,000"){
+		    $metricValueArr = explode("@",$metric);
+		    $metricValue = $metricValueArr[1];
+		    $readOnlyText='readonly=""';
+		}
+
+	  foreach($amend_rate_data_lists as $key=> $populationValue){ //echo $populationValue->population_value."<pre>";print_r($populationValue);die;
+		  
+		  	if($gender=="Yes"){
+				$genderColumnInput='<td><input class="rateNumberValid" type="text" name="rate_male[]" value="'.$populationValue->rate_male.'" '.$widthStyle.'></td>
+							<td><input class="rateNumberValid" type="text" name="sample_size_male[]" value="'.$populationValue->sample_size_male.'" '.$widthStyle.'></td>
+							<td><input class="rateNumberValid" type="text" name="rate_female[]" value="'.$populationValue->rate_female.'" '.$widthStyle.'></td>
+							<td><input class="rateNumberValid" type="text" name="sample_size_female[]" value="'.$populationValue->sample_size_female.'" '.$widthStyle.'></td>';
+		
+	        }
+	        if($ethinicity=="Yes"){
+				$ethinicityColumnInput='<td><input class="rateNumberValid" type="text" name="rate_white[]" value="'.$populationValue->rate_white.'" '.$widthStyle.'></td>
+							<td><input class="rateNumberValid" type="text" name="rate_aa[]" value="'.$populationValue->rate_aa.'" '.$widthStyle.'></td>
+							<td><input class="rateNumberValid" type="text" name="rate_hisp[]" value="'.$populationValue->rate_hisp.'" '.$widthStyle.'></td>
+							<td><input class="rateNumberValid" type="text" name="rate_ai[]" value="'.$populationValue->rate_ai.'" '.$widthStyle.'></td>
+							<td><input class="rateNumberValid" type="text" name="rate_asian[]" value="'.$populationValue->rate_asian.'" '.$widthStyle.'></td>
+							<td><input class="rateNumberValid" type="text" name="rate_other[]" value="'.$populationValue->rate_other.'" '.$widthStyle.'></td>';
+	         }		  
+		  
+		$form['table_body'.$key] =array("#markup"=> '
+			<tr>
+			<td><strong>' . $populationValue->population_value . '</strong><input type="hidden" name="population_list[]" value="'.$populationValue->population_value.'"></td>
+			<td><input class="rateNumberValid" type="text" name="rate[]" value="'.$populationValue->rate.'" '.$widthStyle.'></td>
+			<td><input class="rateNumberValid" type="text" name="size[]" value="'.$populationValue->sample_size.'" '.$readOnlyText.' '.$widthStyle.'></td>
+			'.$genderColumnInput.'
+			'.$ethinicityColumnInput.'
+			</tr>
+		');
+	 }
+		
+
+		$form['table_footer'] = array("#markup"=>'
+			</tbody>
+			</table>
+		');
+		
+		  $form['hidFinalSaveVal'] = array(
+			'#type' => 'hidden',
+			'#value' => 'FinalSave',
+		  );
+		  
+		  $form['hidassessmentTitle'] = array(
+			'#type' => 'hidden',
+			'#value' => $assessmentTitle,
+		  );
+		  
+		  $form['hidMetric'] = array(
+			'#type' => 'hidden',
+			'#value' => $metric,
+		  );
+		   $form['hidcollectionPeriod'] = array(
+			'#type' => 'hidden',
+			'#value' => $collectionPeriod,
+		  );
+		   $form['hidGender'] = array(
+			'#type' => 'hidden',
+			'#value' => $gender,
+		  );
+		   $form['hidEthinicity'] = array(
+			'#type' => 'hidden',
+			'#value' => $ethinicity,
+		  );
+		   $form['hidDataOfData'] = array(
+			'#type' => 'hidden',
+			'#value' => $dateOfData,
+		  );
+		  
+		// if(count($overallPopulationDetails)!=0){
+			$form['next_btn_div_start']=array('#markup'=>"<div class='assessment-nxt-btn'>");
+			  $form['over_submit_save_button'] = array(
+				'#type' => 'button',
+				'#value' => t('Save'),
+			  );
+			  $form['next_btn_div_end']=array('#markup'=>"</div>");
+	     //}	    
+	     
+	  }else{ 
+		  $assessment_id=$_REQUEST['assessment_id'];
+		  
+		  $amend_rate_data_lists = db_select('assessment_rate_details', 'n')
+					->fields('n')
+					->condition('assessment_id', $assessment_id,'=')
+					->execute()
+					->fetchAll(); //echo "<pre>";print_r($amend_rate_data_lists);die;
+		  
+		$assessmentTitle=$_REQUEST['hidassessmentTitle'];
+		$assessmentDetailsHtml="<div class='assessment_specification'><div class='assessment_contetnt'><div class='left_section'><strong>Title: </strong> </div><div class='right_section'> <strong> ".$assessmentTitle."</strong></div></div>";
+		$assessmentDetailsHtml.="<div class='assessment_contetnt'><div class='left_section'><strong>Metric: </strong> </div><div class='right_section'> <strong> ".$metric."</strong></div></div>";
+		$assessmentDetailsHtml.="<div class='assessment_contetnt'><div class='left_section'><strong>Collection Period: </strong> </div><div class='right_section'> <strong> ".$collectionPeriod."</strong></div></div>";
+		$assessmentDetailsHtml.="<div class='assessment_contetnt'><div class='left_section'><strong>Gender: </strong> </div><div class='right_section'> <strong> ".$gender."</strong></div></div>";
+		$assessmentDetailsHtml.="<div class='assessment_contetnt'><div class='left_section'><strong>Ethinicity: </strong> </div><div class='right_section'> <strong> ".$ethinicity."</strong></div></div>";
+		if($populationDetails!=""){
+			$assessmentDetailsHtml.="<div class='assessment_contetnt'><div class='left_section'><strong>Grade Population: </strong> </div><div class='right_section'> <strong> ".rtrim($populationDetails,",")."</strong></div></div>";
+		}
+		if($ageGroupDetails!=""){
+			$assessmentDetailsHtml.="<div class='assessment_contetnt'><div class='left_section'><strong>Age Group Population: </strong> </div><div class='right_section'> <strong> ".rtrim($ageGroupDetails,",")."</strong></div></div>";
+		}
+		if($campusDetails!=""){
+			$assessmentDetailsHtml.="<div class='assessment_contetnt'><div class='left_section'><strong>Site or Campus Population: </strong> </div><div class='right_section'> <strong> ".rtrim($campusDetails,",")."</strong></div></div>";
+		}
+    
+    $assessmentDetailsHtml.="<div class='assessment_contetnt'><div class='left_section'><strong>Date of Data: </strong> </div><div class='right_section'> <strong> ".$dateOfData."</strong></div></div></div>";
+    
+        
+    $popGradeDetailsArr=array_filter(explode(",",$populationDetails)); 
+    $ageGroupDetailsArr=array_filter(explode(",",$ageGroupDetails)); 
+    $campusDetailsArr=array_filter(explode(",",$campusDetails)); 
+    
+    $overallPopulationDetails=array();
+    
+    $overallPopulationDetails=array_merge($popGradeDetailsArr,$ageGroupDetailsArr);
+    
+    $overallPopulationDetails=array_merge($overallPopulationDetails,$campusDetailsArr);
+    
+    
+    //echo "<pre>";print_r($overallPopulationDetails);die;
+    
+    $form["assessment_hid_mark_up"]=array(
+			"#markup"=>$assessmentDetailsHtml
+	);
+	$widthStyle='style="width:100%;"';
+	if($gender=="Yes"){
+		$genderColumn="<td><strong>Rate male</strong></td>
+			<td><strong>Sample size (male)</strong></td>
+			<td><strong>Rate female</strong></td>
+			<td><strong>Sample size (female)</strong></td>";
+	}
+	
+	if($ethinicity=="Yes"){
+		$ethinicityColumn="<td><strong>Rate white</strong></td>
+			<td><strong>Rate AA</strong></td>
+			<td><strong>Rate Hisp</strong></td>
+			<td><strong>Rate AI</strong></td>
+			<td><strong>Rate Asian</strong></td>
+			<td><strong>Rate other</strong></td>";
+	}
+	
+		$form['table_head'] =array("#markup"=> '
+			<table style="width:auto;">
+			<thead>
+			<tr>
+			<td><strong>Population</strong></td>
+			<td><strong>Rate             Selected</strong></td>
+			<td><strong>Sample size: Rate selected in 4a</strong></td>
+			'.$genderColumn.'
+			'.$ethinicityColumn.'</tr>
+			</thead>
+			<tbody>
+		');
+		
+		if($metric=="rate @ 100" || $metric=="rate @ 1000" || $metric=="rate @ 10,000" || $metric=="rate @ 100,000" || $metric=="rate @ 1000,000"){
+		    $metricValueArr = explode("@",$metric);
+		    $metricValue = $metricValueArr[1];
+		    $readOnlyText='readonly=""';
+		}
+
+	  foreach($amend_rate_data_lists as $key=> $populationValue){ 
+		  
+		  	if($gender=="Yes"){
+				$genderColumnInput='<td><input class="rateNumberValid" type="text" name="rate_male[]" value="" '.$widthStyle.'></td>
+				<td><input class="rateNumberValid" type="text" name="sample_size_male[]" value="" '.$widthStyle.'></td>
+				<td><input class="rateNumberValid" type="text" name="rate_female[]" value="" '.$widthStyle.'></td>
+				<td><input class="rateNumberValid" type="text" name="sample_size_female[]" value="" '.$widthStyle.'></td>';
+		    
+	        }
+	        if($ethinicity=="Yes"){
+				$ethinicityColumnInput='<td><input class="rateNumberValid" type="text" name="rate_white[]" value="" '.$widthStyle.'></td>
+							<td><input class="rateNumberValid" type="text" name="rate_aa[]" value="" '.$widthStyle.'></td>
+							<td><input class="rateNumberValid" type="text" name="rate_hisp[]" value="" '.$widthStyle.'></td>
+							<td><input class="rateNumberValid" type="text" name="rate_ai[]" value="" '.$widthStyle.'></td>
+							<td><input class="rateNumberValid" type="text" name="rate_asian[]" value="" '.$widthStyle.'></td>
+							<td><input class="rateNumberValid" type="text" name="rate_other[]" value="" '.$widthStyle.'></td>';
+		
+	       }
+		  
+		$form['table_body'.$key] =array("#markup"=> '
+			<tr>
+			<td><strong>' . $populationValue->population_value . '</strong><input type="hidden" name="population_list[]" value="'.$populationValue->population_value.'"></td>
+			<td><input class="rateNumberValid" type="text" name="rate[]" value="" '.$widthStyle.'></td>
+			<td><input class="rateNumberValid" type="text" name="size[]" value="'.$metricValue.'" '.$readOnlyText.' '.$widthStyle.'></td>
+			'.$genderColumnInput.'
+			'.$ethinicityColumnInput.'
+			</tr>
+		');
+	 }
+		
+
+		$form['table_footer'] = array("#markup"=>'
+			</tbody>
+			</table>
+		');
+		
+		  $form['hidFinalSaveVal'] = array(
+			'#type' => 'hidden',
+			'#value' => 'AppendFinalSave',
+		  );
+		  
+		  $form['assessment_id'] = array(
+			'#type' => 'hidden',
+			'#value' => '',
+		  );
+		  
+		  $form['hidassessmentTitle'] = array(
+			'#type' => 'hidden',
+			'#value' => $assessmentTitle,
+		  );
+		  
+		  $form['hidMetric'] = array(
+			'#type' => 'hidden',
+			'#value' => $metric,
+		  );
+		   $form['hidcollectionPeriod'] = array(
+			'#type' => 'hidden',
+			'#value' => $collectionPeriod,
+		  );
+		   $form['hidGender'] = array(
+			'#type' => 'hidden',
+			'#value' => $gender,
+		  );
+		   $form['hidEthinicity'] = array(
+			'#type' => 'hidden',
+			'#value' => $ethinicity,
+		  );
+		   $form['hidDataOfData'] = array(
+			'#type' => 'hidden',
+			'#value' => $dateOfData,
+		  );
+		  
+		$form['next_btn_div_start']=array('#markup'=>"<div class='assessment-nxt-btn'>");
+			$form['over_submit_save_button'] = array(
+				'#type' => 'button',
+				'#value' => t('Save'),
+			);	 
+		$form['next_btn_div_end']=array('#markup'=>"</div>");
+		  
+	  }
+	
+	}else if((isset($_REQUEST['hidFinalSaveVal']) && $_REQUEST['hidFinalSaveVal']!='') || $_REQUEST['hidFinalSaveVal']=='AppendFinalSave' ){ 
+		
+		
+		if(isset($_REQUEST['assessment_id']) && $_REQUEST['assessment_id']!=''){
+			  $assessment_id=$_REQUEST['assessment_id'];
+			  
+			 if(isset($_REQUEST['population_list']) && count($_REQUEST['population_list'])>1){ 
+				
+			   for($i=0;$i<count($_REQUEST['population_list']);$i++){
+				   $reqPopulation=$_REQUEST['population_list'][$i]; 
+				   $reqRate=floatval(str_replace(",","",$_REQUEST['rate'][$i]));
+				   $reqSize=floatval(str_replace(",","",$_REQUEST['size'][$i])); //echo $reqSize."<pre>";print_r($_REQUEST);die;
+				   $reqRateMale=floatval($_REQUEST['rate_male'][$i]);
+				   $reqSampleSizeMale=floatval($_REQUEST['sample_size_male'][$i]);
+				   $reqRateFeMale=floatval($_REQUEST['rate_female'][$i]);
+				   $reqSampleSizeFeMale=floatval($_REQUEST['sample_size_female'][$i]);
+				   $reqRateWhite=floatval($_REQUEST['rate_white'][$i]);
+				   $reqRateAA=floatval($_REQUEST['rate_aa'][$i]);
+				   $reqRateHisp=floatval($_REQUEST['rate_hisp'][$i]);
+				   $reqRateAI=floatval($_REQUEST['rate_ai'][$i]);
+				   $reqRateAsian=floatval($_REQUEST['rate_asian'][$i]);
+				   $reqRateOther=floatval($_REQUEST['rate_other'][$i]);
+				// update assessment rates in assessment_rate_details.
+				
+				$assessment_rate_update_result= db_update('assessment_rate_details') 
+                ->fields(array(
+				'assessment_id' => $assessment_id,
+				'population_value' => $reqPopulation,
+				'rate' => $reqRate,
+				'sample_size' => $reqSize,
+				'rate_male' => $reqRateMale,
+				'sample_size_male' => $reqSampleSizeMale,
+				'rate_female' => $reqRateFeMale,
+				'sample_size_female' => $reqSampleSizeFeMale,
+				'rate_white' => $reqRateWhite,
+				'rate_aa' => $reqRateAA,
+				'rate_hisp' => $reqRateHisp,
+				'rate_ai' => $reqRateAI,
+				'rate_asian' => $reqRateAsian,
+				'rate_other' => $reqRateOther,
+				))
+                ->condition('assessment_id', $assessment_id, '=')
+                ->condition('population_value', $reqPopulation, '=')
+                ->execute();
+				
+			   }	
+			   $assessmentTitle=$_REQUEST['hidassessmentTitle'];
+			   	 if(count($assessment_rate_update_result)>0){	
+			   	 	drupal_goto("assessment-details-form", array('query'=>array('update-msg' => $assessmentTitle)));
+				 }
+					
+			}else{ 
+				   $reqPopulation=$_REQUEST['population_list'][0];
+				   $reqRate=floatval($_REQUEST['rate'][0]);
+				   $reqSize=floatval(str_replace(",","",$_REQUEST['size'][0]));
+				   $reqRateMale=floatval($_REQUEST['rate_male'][0]);
+				   $reqSampleSizeMale=floatval($_REQUEST['sample_size_male'][0]);
+				   $reqRateFeMale=floatval($_REQUEST['rate_female'][0]);
+				   $reqSampleSizeFeMale=floatval($_REQUEST['sample_size_female'][0]);
+				   $reqRateWhite=floatval($_REQUEST['rate_white'][0]);
+				   $reqRateAA=floatval($_REQUEST['rate_aa'][0]);
+				   $reqRateHisp=floatval($_REQUEST['rate_hisp'][0]);
+				   $reqRateAI=floatval($_REQUEST['rate_ai'][0]);
+				   $reqRateAsian=floatval($_REQUEST['rate_asian'][0]);
+				   $reqRateOther=floatval($_REQUEST['rate_other'][0]);
+				   $assessmentTitle=$_REQUEST['hidassessmentTitle'];
+				// insert assessment rates in assessment_rate_details.
+				$assessment_rate_update_result= db_update('assessment_rate_details') 
+                ->fields(array(
+				'assessment_id' => $assessment_id,
+				'population_value' => $reqPopulation,
+				'rate' => $reqRate,
+				'sample_size' => $reqSize,
+				'rate_male' => $reqRateMale,
+				'sample_size_male' => $reqSampleSizeMale,
+				'rate_female' => $reqRateFeMale,
+				'sample_size_female' => $reqSampleSizeFeMale,
+				'rate_white' => $reqRateWhite,
+				'rate_aa' => $reqRateAA,
+				'rate_hisp' => $reqRateHisp,
+				'rate_ai' => $reqRateAI,
+				'rate_asian' => $reqRateAsian,
+				'rate_other' => $reqRateOther,
+				))
+                ->condition('assessment_id', $assessment_id, '=')
+                ->condition('population_value', $reqPopulation, '=')
+                ->execute();
+	
+			   	 if(count($assessment_rate_update_result)>0){	
+			   	 	drupal_goto("assessment-details-form", array('query'=>array('update-msg' => $assessmentTitle)));
+				 }
+			}
+			
+		}else{
+	        $assessmentTitle=$_REQUEST['hidassessmentTitle'];
+	        $metricVal=$_REQUEST['hidMetric'];
+	        $collectionPeriodVal=$_REQUEST['hidcollectionPeriod'];
+	        $genderVal=$_REQUEST['hidGender'];
+	        $ethinicityVal=$_REQUEST['hidEthinicity'];
+	        $DataOfDataVal=$_REQUEST['hidDataOfData'];
+	        
+	        if($assessmentTitle!=''){
+				$assessment_id=db_insert('assessment_details')
+					->fields(array(
+					'uid' => $user->uid,
+					'title' => $assessmentTitle,
+					'metric' => $metricVal,
+					'collection_period' => $collectionPeriodVal,
+					'gender' => $genderVal,
+					'ethnicity' => $ethinicityVal,
+					'date_of_data' => $DataOfDataVal,
+					))->execute();
+					
+			}
+	        
+	        if(isset($_REQUEST['population_list']) && count($_REQUEST['population_list'])>1){ 
+				
+			   for($i=0;$i<count($_REQUEST['population_list']);$i++){
+				   $reqPopulation=$_REQUEST['population_list'][$i]; 
+				   $reqRate=floatval(str_replace(",","",$_REQUEST['rate'][$i]));
+				   $reqSize=floatval(str_replace(",","",$_REQUEST['size'][$i])); //echo $reqSize."<pre>";print_r($_REQUEST);die;
+				   $reqRateMale=floatval($_REQUEST['rate_male'][$i]);
+				   $reqSampleSizeMale=floatval($_REQUEST['sample_size_male'][$i]);
+				   $reqRateFeMale=floatval($_REQUEST['rate_female'][$i]);
+				   $reqSampleSizeFeMale=floatval($_REQUEST['sample_size_female'][$i]);
+				   $reqRateWhite=floatval($_REQUEST['rate_white'][$i]);
+				   $reqRateAA=floatval($_REQUEST['rate_aa'][$i]);
+				   $reqRateHisp=floatval($_REQUEST['rate_hisp'][$i]);
+				   $reqRateAI=floatval($_REQUEST['rate_ai'][$i]);
+				   $reqRateAsian=floatval($_REQUEST['rate_asian'][$i]);
+				   $reqRateOther=floatval($_REQUEST['rate_other'][$i]);
+				// insert assessment rates in assessment_rate_details.
+				$assessment_rate_result=db_insert('assessment_rate_details')
+				->fields(array(
+				'assessment_id' => $assessment_id,
+				'population_value' => $reqPopulation,
+				'rate' => $reqRate,
+				'sample_size' => $reqSize,
+				'rate_male' => $reqRateMale,
+				'sample_size_male' => $reqSampleSizeMale,
+				'rate_female' => $reqRateFeMale,
+				'sample_size_female' => $reqSampleSizeFeMale,
+				'rate_white' => $reqRateWhite,
+				'rate_aa' => $reqRateAA,
+				'rate_hisp' => $reqRateHisp,
+				'rate_ai' => $reqRateAI,
+				'rate_asian' => $reqRateAsian,
+				'rate_other' => $reqRateOther,
+				))->execute();
+			   }	
+			   	 if(count($assessment_rate_result)>0){	
+			   	 	drupal_goto("assessment-details-form", array('query'=>array('responce-msg' => $assessmentTitle)));
+				 }
+					
+			}else{
+				   $reqPopulation=$_REQUEST['population_list'][0];
+				   $reqRate=floatval(str_replace(",","",$_REQUEST['rate'][0]));
+				   $reqSize=floatval(str_replace(",","",$_REQUEST['size'][0]));
+				   $reqRateMale=floatval($_REQUEST['rate_male'][0]);
+				   $reqSampleSizeMale=floatval($_REQUEST['sample_size_male'][0]);
+				   $reqRateFeMale=floatval($_REQUEST['rate_female'][0]);
+				   $reqSampleSizeFeMale=floatval($_REQUEST['sample_size_female'][0]);
+				   $reqRateWhite=floatval($_REQUEST['rate_white'][0]);
+				   $reqRateAA=floatval($_REQUEST['rate_aa'][0]);
+				   $reqRateHisp=floatval($_REQUEST['rate_hisp'][0]);
+				   $reqRateAI=floatval($_REQUEST['rate_ai'][0]);
+				   $reqRateAsian=floatval($_REQUEST['rate_asian'][0]);
+				   $reqRateOther=floatval($_REQUEST['rate_other'][0]);
+				// insert assessment rates in assessment_rate_details.
+				$assessment_rate_result=db_insert('assessment_rate_details')
+				->fields(array(
+				'assessment_id' => $assessment_id,
+				'population_value' => $reqPopulation,
+				'rate' => $reqRate,
+				'sample_size' => $reqSize,
+				'rate_male' => $reqRateMale,
+				'sample_size_male' => $reqSampleSizeMale,
+				'rate_female' => $reqRateFeMale,
+				'sample_size_female' => $reqSampleSizeFeMale,
+				'rate_white' => $reqRateWhite,
+				'rate_aa' => $reqRateAA,
+				'rate_hisp' => $reqRateHisp,
+				'rate_ai' => $reqRateAI,
+				'rate_asian' => $reqRateAsian,
+				'rate_other' => $reqRateOther,
+				))->execute();
+				 if(count($assessment_rate_result)>0){	
+			   	 	drupal_goto("assessment-details-form", array('query'=>array('responce-msg' => $assessmentTitle)));
+				 }
+			}
+		 }
+	 		//$form_state['redirect'] = 'assessment-details-form'; 
+	 	    //drupal_set_message('<strong>'.$assessmentTitle.'</strong> Assessment details successfully saved');
+	 
+	 }else if(isset($_REQUEST['date_of_data']) && $_REQUEST['date_of_data']!=''){
+		
+		$substanceValue=$_REQUEST['hidSubstance'];
+		$indicatorValue=$_REQUEST['hidIndicator'];
+		$dataSource=$_REQUEST['hidDataSource'];
+		$metric=$_REQUEST['hidMetric'];
+		$collectionPeriod=$_REQUEST['hidcollectionPeriod'];
+		$gender=$_REQUEST['hidGender'];
+		$ethinicity=$_REQUEST['hidEthinicity'];
+		$populationDetails=$_REQUEST['hidpopulation'];
+		$ageGroupDetails=$_REQUEST['hidAge'];
+		$campusDetails=$_REQUEST['hidCampus'];
+		$dateOfData=$_REQUEST['date_of_data'];
+        $assessmentTitle=$substanceValue." - ".$indicatorValue." - ".$dataSource;
+		$assessmentDetailsHtml="<div class='assessment_specification'><div class='assessment_contetnt'><div class='left_section'><strong>Title: </strong> </div><div class='right_section'> <strong> ".$substanceValue." - ".$indicatorValue." - ".$dataSource."</strong></div></div>";
+		$assessmentDetailsHtml.="<div class='assessment_contetnt'><div class='left_section'><strong>Metric: </strong> </div><div class='right_section'> <strong> ".$metric."</strong></div></div>";
+		$assessmentDetailsHtml.="<div class='assessment_contetnt'><div class='left_section'><strong>Collection Period: </strong> </div><div class='right_section'> <strong> ".$collectionPeriod."</strong></div></div>";
+		$assessmentDetailsHtml.="<div class='assessment_contetnt'><div class='left_section'><strong>Gender: </strong> </div><div class='right_section'> <strong> ".$gender."</strong></div></div>";
+		$assessmentDetailsHtml.="<div class='assessment_contetnt'><div class='left_section'><strong>Ethinicity: </strong> </div><div class='right_section'> <strong> ".$ethinicity."</strong></div></div>";
+		if($populationDetails!=""){
+			$assessmentDetailsHtml.="<div class='assessment_contetnt'><div class='left_section'><strong>Grade Population: </strong> </div><div class='right_section'> <strong> ".rtrim($populationDetails,",")."</strong></div></div>";
+		}
+		if($ageGroupDetails!=""){
+			$assessmentDetailsHtml.="<div class='assessment_contetnt'><div class='left_section'><strong>Age Group Population: </strong> </div><div class='right_section'> <strong> ".rtrim($ageGroupDetails,",")."</strong></div></div>";
+		}
+		if($campusDetails!=""){
+			$assessmentDetailsHtml.="<div class='assessment_contetnt'><div class='left_section'><strong>Site or Campus Population: </strong> </div><div class='right_section'> <strong> ".rtrim($campusDetails,",")."</strong></div></div>";
+		}
+    
+    //$assessmentDetailsHtml.="<tr><td><strong>Age Group Details: ".rtrim($ageGroupDetails,",")."</strong><br></tr>";
+    //$assessmentDetailsHtml.="<tr><td><strong>Campus Details: ".rtrim($campusDetails,",")."</strong></td></tr>";
+    $assessmentDetailsHtml.="<div class='assessment_contetnt'><div class='left_section'><strong>Date of Data: </strong> </div><div class='right_section'> <strong> ".$dateOfData."</strong></div></div></div>";
+    
+        
+    $popGradeDetailsArr=array_filter(explode(",",$populationDetails)); 
+    $ageGroupDetailsArr=array_filter(explode(",",$ageGroupDetails)); 
+    $campusDetailsArr=array_filter(explode(",",$campusDetails)); 
+    
+    $overallPopulationDetails=array();
+    
+    $overallPopulationDetails=array_merge($popGradeDetailsArr,$ageGroupDetailsArr);
+    
+    $overallPopulationDetails=array_merge($overallPopulationDetails,$campusDetailsArr);
+    
+    if(count($overallPopulationDetails)==0){
+			$tablHide="display:none;";
+	}
+    
+    //echo "<pre>";print_r($overallPopulationDetails);die;
+    
+    $form["assessment_hid_mark_up"]=array(
+			"#markup"=>$assessmentDetailsHtml
+	);
+	$widthStyle='style="width:100%;"';
+	if($gender=="Yes"){
+		$genderColumn="<td><strong>Rate male</strong></td>
+			<td><strong>Sample size (male)</strong></td>
+			<td><strong>Rate female</strong></td>
+			<td><strong>Sample size (female)</strong></td>";
+		$genderColumnInput='<td><input class="rateNumberValid" type="text" name="rate_male[]" value="" '.$widthStyle.'></td>
+			<td><input class="rateNumberValid" type="text" name="sample_size_male[]" value="" '.$widthStyle.'></td>
+			<td><input class="rateNumberValid" type="text" name="rate_female[]" value="" '.$widthStyle.'></td>
+			<td><input class="rateNumberValid" type="text" name="sample_size_female[]" value="" '.$widthStyle.'></td>';
+	}
+	
+	if($ethinicity=="Yes"){
+		$ethinicityColumn="<td><strong>Rate white</strong></td>
+			<td><strong>Rate AA</strong></td>
+			<td><strong>Rate Hisp</strong></td>
+			<td><strong>Rate AI</strong></td>
+			<td><strong>Rate Asian</strong></td>
+			<td><strong>Rate other</strong></td>";
+		$ethinicityColumnInput='<td><input class="rateNumberValid" type="text" name="rate_white[]" value="" '.$widthStyle.'></td>
+			<td><input class="rateNumberValid" type="text" name="rate_aa[]" value="" '.$widthStyle.'></td>
+			<td><input class="rateNumberValid" type="text" name="rate_hisp[]" value="" '.$widthStyle.'></td>
+			<td><input class="rateNumberValid" type="text" name="rate_ai[]" value="" '.$widthStyle.'></td>
+			<td><input class="rateNumberValid" type="text" name="rate_asian[]" value="" '.$widthStyle.'></td>
+			<td><input class="rateNumberValid" type="text" name="rate_other[]" value="" '.$widthStyle.'></td>';
+	}
+	
+		$form['table_head'] =array("#markup"=> '
+			<table style="width:auto;'.$tablHide.'">
+			<thead>
+			<tr>
+			<td><strong>Population</strong></td>
+			<td><strong>Rate             Selected</strong></td>
+			<td><strong>Sample size: Rate selected in 4a</strong></td>
+			'.$genderColumn.'
+			'.$ethinicityColumn.'</tr>
+			</thead>
+			<tbody>
+		');
+		
+		if($metric=="rate @ 100" || $metric=="rate @ 1000" || $metric=="rate @ 10,000" || $metric=="rate @ 100,000" || $metric=="rate @ 1000,000"){
+		    $metricValueArr = explode("@",$metric);
+		    $metricValue = $metricValueArr[1];
+		    $readOnlyText='readonly=""';
+		}
+
+	  foreach($overallPopulationDetails as $key=> $populationValue){ 
+		$form['table_body'.$key] =array("#markup"=> '
+			<tr>
+			<td><strong>' . $populationValue . '</strong><input type="hidden" name="population_list[]" value="'.$populationValue.'"></td>
+			<td><input class="rateNumberValid" type="text" name="rate[]" value="" '.$widthStyle.'></td>
+			<td><input class="rateNumberValid" type="text" name="size[]" value="'.$metricValue.'" '.$readOnlyText.' '.$widthStyle.'></td>
+			'.$genderColumnInput.'
+			'.$ethinicityColumnInput.'
+			</tr>
+		');
+	 }
+		
+
+		$form['table_footer'] = array("#markup"=>'
+			</tbody>
+			</table>
+		');
+		
+		  $form['hidFinalSaveVal'] = array(
+			'#type' => 'hidden',
+			'#value' => 'FinalSave',
+		  );
+		  
+		  $form['hidassessmentTitle'] = array(
+			'#type' => 'hidden',
+			'#value' => $assessmentTitle,
+		  );
+		  
+		  $form['hidMetric'] = array(
+			'#type' => 'hidden',
+			'#value' => $metric,
+		  );
+		   $form['hidcollectionPeriod'] = array(
+			'#type' => 'hidden',
+			'#value' => $collectionPeriod,
+		  );
+		   $form['hidGender'] = array(
+			'#type' => 'hidden',
+			'#value' => $gender,
+		  );
+		   $form['hidEthinicity'] = array(
+			'#type' => 'hidden',
+			'#value' => $ethinicity,
+		  );
+		   $form['hidDataOfData'] = array(
+			'#type' => 'hidden',
+			'#value' => $dateOfData,
+		  );
+		  
+		 if(count($overallPopulationDetails)!=0){
+		
+			  $form['next_btn_div_start']=array('#markup'=>"<div class='assessment-nxt-btn'>");
+			  $form['over_submit_save_button'] = array(
+				'#type' => 'button',
+				'#value' => t('Save'),
+			  );
+			  $form['next_btn_div_end']=array('#markup'=>"</div>");
+	     }
+	
+	
+	}else if(isset($_REQUEST['assessment_id']) && $_REQUEST['assessment_id']!=''){
+		
+		drupal_set_title('Amend or Append data point');
+		
+		$asse_id=$_REQUEST['assessment_id'];
+		$assessment_data_lists = db_query("SELECT * FROM {assessment_details} WHERE assessment_id = ".$asse_id)->fetchAll();
+		//echo $assessment_data_lists[0]->assessment_id."<pre>";print_r($assessment_data_lists);die;
+		//$assessment_rate_lists = db_query("SELECT assessment_rate_details.assessment_id, assessment_rate_details.title FROM {assessment_rate_details} WHERE assessment_id = ".$asse_id)->fetchAllKeyed();
+			
+        $title=$assessment_data_lists[0]->title;
+		$metric=$assessment_data_lists[0]->metric;
+		$collectionPeriod=$assessment_data_lists[0]->collection_period;
+		$gender=$assessment_data_lists[0]->gender;
+		$ethinicity=$assessment_data_lists[0]->ethnicity;
+		$dateOfData=$assessment_data_lists[0]->date_of_data;
+        
+		$assessmentDetailsHtml="<div class='assessment_specification'><div class='assessment_contetnt'><div class='left_section'><strong>Title: </div><div class='right_section'>  ".$title."</strong></div></div>";
+		$assessmentDetailsHtml.="<div class='assessment_contetnt'><div class='left_section'><strong>Metric: </div><div class='right_section'> ".$metric."</strong></div></div>";
+		$assessmentDetailsHtml.="<div class='assessment_contetnt'><div class='left_section'><strong>Collection Period: </div><div class='right_section'> ".$collectionPeriod."</strong></div></div>";
+		$assessmentDetailsHtml.="<div class='assessment_contetnt'><div class='left_section'><strong>Gender: </div><div class='right_section'> ".$gender."</strong> </div></div>";
+		$assessmentDetailsHtml.="<div class='assessment_contetnt'><div class='left_section'><strong>Ethinicity: </div><div class='right_section'> ".$ethinicity."</strong> </div></div>";
+		if($populationDetails!=""){
+			$assessmentDetailsHtml.="<strong>Grade Population: ".rtrim($populationDetails,",")."</strong><br>";
+		}
+		if($ageGroupDetails!=""){
+			$assessmentDetailsHtml.="<strong>Age Group Population: ".rtrim($ageGroupDetails,",")."</strong><br>";
+		}
+		if($campusDetails!=""){
+			$assessmentDetailsHtml.="<strong>Site or Campus Population: ".rtrim($campusDetails,",")."</strong><br>";
+		}
+        
+		$dateOfDataQuery = db_select('assessment_details','a');
+		$dateOfDataQuery->fields('a', array('assessment_id','date_of_data'));
+		$dateOfDataQuery->condition('a.title',$title,'=');
+		$date_of_data_lists = $dateOfDataQuery->execute()->fetchAll();
+        
+
+		//echo "<pre>";print_r($date_of_data_lists);die;
+
+		$assessmentDetailsHtml.="<div class='assessment_contetnt'><div class='left_section'><strong>Date of Data: </strong></div>";
+		  
+		  foreach($date_of_data_lists as $datekey=>$dateOfDataItem){
+			  if($dateOfData==$dateOfDataItem->date_of_data){
+					$assessmentDetailsHtml.="<div class='right_section'><strong><a class='date-of-data-highlight' href='assessment-details?assessment_id=".$dateOfDataItem->assessment_id."'>".rtrim($dateOfDataItem->date_of_data,",")."</a></strong>, ";
+		      }else{
+					$assessmentDetailsHtml.="<a href='assessment-details?assessment_id=".$dateOfDataItem->assessment_id."'>".rtrim($dateOfDataItem->date_of_data,",")."</a>, ";
+			  }
+		  }
+		   $assessmentDetailsHtml=rtrim($assessmentDetailsHtml,",");
+		//$assessmentDetailsHtml.="</table></td></tr>";
+		$assessmentDetailsHtml.="</div></div></div>";
+		//echo "<pre>";print_r($overallPopulationDetails);die;
+    
+    $form["assessment_hid_mark_up"]=array(
+			"#markup"=>$assessmentDetailsHtml
+	);
+
+		
+  if($collectionPeriod=="Annually"){
+		/* vid '31' means Data of Date Texanomy terms which is configured in Drupal admin */
+	$annual_data = db_query("SELECT name, name FROM {taxonomy_term_data} WHERE vid = 31")->fetchAllKeyed();
+  
+	$form['date_of_data'] = array(
+	'#type' => 'radios',
+	'#title' => t('Data of Date'),
+	'#default_value' => $dateOfData,
+	'#options' => $annual_data,
+	);
+  }
+   if($collectionPeriod=="Monthly"){
+		/* vid '33' means Data of Date Month Texanomy terms which is configured in Drupal admin */
+	$month_data = db_query("SELECT name, name FROM {taxonomy_term_data} WHERE vid = 33")->fetchAllKeyed();
+  
+	$form['date_of_data'] = array(
+	'#type' => 'radios',
+	'#title' => t('Data of Date'),
+	'#default_value' => $dateOfData,
+	'#options' => $month_data,
+	);
+  }
+   if($collectionPeriod=="Quarterly"){
+		/* vid '32' means Data of Date Quarter Texanomy terms which is configured in Drupal admin */
+	$quarter_data = db_query("SELECT name, name FROM {taxonomy_term_data} WHERE vid = 32")->fetchAllKeyed();
+  
+	$form['date_of_data'] = array(
+	'#type' => 'radios',
+	'#title' => t('Data of Date1'),
+	'#default_value' => $dateOfData,
+	'#options' => $quarter_data,
+	);
+  }
+		
+		  $form['hidAmendSaveVal'] = array(
+			'#type' => 'hidden',
+			'#value' => 'AmendDataSave',
+		  );
+		  
+		  $form['hidassessmentTitle'] = array(
+			'#type' => 'hidden',
+			'#value' => $title,
+		  );
+		  
+		  $form['hidMetric'] = array(
+			'#type' => 'hidden',
+			'#value' => $metric,
+		  );
+		   $form['hidcollectionPeriod'] = array(
+			'#type' => 'hidden',
+			'#value' => $collectionPeriod,
+		  );
+		   $form['hidGender'] = array(
+			'#type' => 'hidden',
+			'#value' => $gender,
+		  );
+		   $form['hidEthinicity'] = array(
+			'#type' => 'hidden',
+			'#value' => $ethinicity,
+		  );
+		   $form['hidDataOfData'] = array(
+			'#type' => 'hidden',
+			'#attributes' => array("id"=>"DateOfDataId"),
+			'#value' => $dateOfData,
+		  );
+		
+			$form['next_btn_div_start']=array('#markup'=>"<div class='assessment-nxt-btn'>");
+		
+			  $form['over_submit_amend_button'] = array(
+				'#type' => 'button',
+				'#value' => t('Next'),
+			  );
+			$form['next_btn_div_end']=array('#markup'=>"</div>");
+	
+	
+	}else{
+    
+	//echo "<pre>";print_r($_GET);die;
+	
+	if(isset($_SESSION['assessmentDetailsKey'])){
+	
+	$form_state=$_SESSION['assessmentDetailsKey'];
+	
+	if(isset($form_state['values']['data_custom']) && $form_state['values']['data_custom']!=''){
+	    $dataSource=$form_state['values']['data_custom'];
+	}else{
+		$dataSource=$form_state['values']['data_source_options'];
+	}
+	$metric=str_replace(array('/','"'),"",$form_state['values']['metric']);
+	$collectionPeriod=$form_state['values']['collection_period'];
+	$collectionDate=$form_state['values']['date_collection_data'];
+	$gender=$form_state['values']['gender'];
+	$ethinicity=$form_state['values']['ethinicity'];
+	$populationCount=count($form_state['values']['population']);
+	$ageGroupCount=count($form_state['values']['age_group']);
+	$soteOrCampusCount=count($form_state['values']['site_or_campus']);
+	}else{
+	  
+	  echo "Something went wrong. Please try again later";
+	
+	}
+	
+	if(count($populationCount)>0){
+		foreach($form_state['values']['population'] as $key=>$val){ 
+		   if($key=="Custom" && $form_state['values']['population_custom']!=''){ $populationDetails.=$key.": ".$form_state['values']['population_custom'].""; }
+		   if($val!="0" && $val!="Custom"){
+				$populationDetails.=$val.",";
+		   }
+		}
+	}
+	if(count($ageGroupCount)>0){
+		foreach($form_state['values']['age_group'] as $key=>$val){ 
+		   if($key=="Custom" && $form_state['values']['age_group_custom']!=''){ $ageGroupDetails.=$key.": ".$form_state['values']['age_group_custom'].""; }
+		   if($val!="0" && $val!="Custom"){
+				$ageGroupDetails.=$val.",";
+		   }
+		}
+	}
+	if(count($populationCount)>0){
+		foreach($form_state['values']['site_or_campus'] as $key=>$val){ 
+		   if($key=="Custom" && $form_state['values']['site_or_campus_custom']!=''){ $campusDetails.=$key.": ".$form_state['values']['site_or_campus_custom'].""; }
+		   if($val!="0" && $val!="Custom"){
+				$campusDetails.=$val.",";
+		   }
+		}
+	}
+		
+	if(isset($_SESSION['substanceChooseValue'])){
+	      $substanceValue=$_SESSION['substanceChooseValue'];
+	}
+	if(isset($_SESSION['indicatorChooseValue'])){
+	      $indicatorValue=$_SESSION['indicatorChooseValue'];
+	}
+    
+    $assessmentDetailsHtml="<div class='assessment_specification'><div class='assessment_contetnt'><div class='left_section'><strong>Name: </strong> </div><div class='right_section'> <strong> ".$substanceValue." - ".$indicatorValue." - ".$dataSource."</strong></div></div>";
+    $assessmentDetailsHtml.="<div class='assessment_contetnt'><div class='left_section'><strong>Metric: </strong> </div><div class='right_section'> <strong> ".$metric."</strong></div></div>";
+    $assessmentDetailsHtml.="<div class='assessment_contetnt'><div class='left_section'><strong>Collection Period: </strong> </div><div class='right_section'> <strong> ".$collectionPeriod."</strong></div></div>";
+    $assessmentDetailsHtml.="<div class='assessment_contetnt'><div class='left_section'><strong>Gender: </strong> </div><div class='right_section'> <strong> ".$gender."</strong></div></div>";
+    $assessmentDetailsHtml.="<div class='assessment_contetnt'><div class='left_section'><strong>Ethinicity: </strong> </div><div class='right_section'> <strong> ".$ethinicity."</strong></div></div>";
+    //$assessmentDetailsHtml.="<tr><td><strong>Population: ".rtrim($populationDetails,",").", ".rtrim($ageGroupDetails,",").", ".rtrim($campusDetails,",")."</strong><br></tr>";
+    
+    if($populationDetails!=""){
+		$assessmentDetailsHtml.="<div class='assessment_contetnt'><div class='left_section'><strong>Grade Population: </strong> </div><div class='right_section'> <strong> ".rtrim($populationDetails,",")."</strong></div></div>";
+    }
+    if($ageGroupDetails!=""){
+		$assessmentDetailsHtml.="<div class='assessment_contetnt'><div class='left_section'><strong>Age Group Population: </strong> </div><div class='right_section'> <strong> ".rtrim($ageGroupDetails,",")."</strong></div></div>";
+    }
+    if($campusDetails!=""){
+		$assessmentDetailsHtml.="<div class='assessment_contetnt'><div class='left_section'><strong>Site or Campus Population: </strong> </div><div class='right_section'> <strong> ".rtrim($campusDetails,",")."</strong></div></div></div>";
+    } 
+   
+    
+    //$assessmentDetailsHtml.="<strong>Grade Details: ".rtrim($populationDetails,",")."</strong><br>";
+    //$assessmentDetailsHtml.="<strong>Age Group Details: ".rtrim($ageGroupDetails,",")."</strong><br>";
+    //$assessmentDetailsHtml.="<strong>Site or Campus Details: ".rtrim($campusDetails,",")."</strong><br>";
+    
+	$form["assessment_mark_up"]=array(
+			"#markup"=>$assessmentDetailsHtml."<br>"
+	);
+	
+  if($collectionPeriod=="Annually"){
+		/* vid '31' means Data of Date Texanomy terms which is configured in Drupal admin */
+	$annual_data = db_query("SELECT name, name FROM {taxonomy_term_data} WHERE vid = 31")->fetchAllKeyed();
+  
+	$form['date_of_data'] = array(
+	'#type' => 'radios',
+	'#title' => t('Data of Date'),
+	'#options' => $annual_data,
+	);
+  }
+   if($collectionPeriod=="Monthly"){
+		/* vid '33' means Data of Date Month Texanomy terms which is configured in Drupal admin */
+	$month_data = db_query("SELECT name, name FROM {taxonomy_term_data} WHERE vid = 33")->fetchAllKeyed();
+  
+	$form['date_of_data'] = array(
+	'#type' => 'radios',
+	'#title' => t('Data of Date'),
+	'#options' => $month_data,
+	);
+  }
+   if($collectionPeriod=="Quarterly"){
+		/* vid '32' means Data of Date Quarter Texanomy terms which is configured in Drupal admin */
+	$quarter_data = db_query("SELECT name, name FROM {taxonomy_term_data} WHERE vid = 32")->fetchAllKeyed();
+  
+	$form['date_of_data'] = array(
+	'#type' => 'radios',
+	'#title' => t('Data of Date'),
+	'#options' => $quarter_data,
+	);
+  }
+  
+  $form['next_btn_div_start']=array('#markup'=>"<div class='assessment-nxt-btn'>");
+  $form['over_submit_button'] = array(
+    '#type' => 'submit',
+    '#value' => t('Next'),
+  );
+  $form['next_btn_div_end']=array('#markup'=>"</div>");
+  
+    $form['hidSubstance'] = array(
+    '#type' => 'hidden',
+    '#value' => $substanceValue,
+  );
+    $form['hidIndicator'] = array(
+    '#type' => 'hidden',
+    '#value' => $indicatorValue,
+  );
+    $form['hidDataSource'] = array(
+    '#type' => 'hidden',
+    '#value' => $dataSource,
+  );
+    $form['hidMetric'] = array(
+    '#type' => 'hidden',
+    '#value' => $metric,
+  );
+   $form['hidcollectionPeriod'] = array(
+    '#type' => 'hidden',
+    '#value' => $collectionPeriod,
+  );
+   $form['hidGender'] = array(
+    '#type' => 'hidden',
+    '#value' => $gender,
+  );
+   $form['hidEthinicity'] = array(
+    '#type' => 'hidden',
+    '#value' => $ethinicity,
+  );
+   $form['hidpopulation'] = array(
+    '#type' => 'hidden',
+    '#value' => $populationDetails,
+  );
+   $form['hidAge'] = array(
+    '#type' => 'hidden',
+    '#value' => $ageGroupDetails,
+  );
+  $form['hidCampus'] = array(
+    '#type' => 'hidden',
+    '#value' => $campusDetails,
+  );
+
+ }
+ 
+ $form['Assessment-title-4'] = array(
+  '#markup' => '</div>'
+  );
+  
+    $form['sub_end_break']=array(
+		'#markup'=>'<br><br>'
+  );
+	   
+   return $form;
+    
+}
+
+
+
+
+function new_assessment_submit($form, &$form_state) {
+ 
+   if(isset($form_state['values']['substance_custom']) &&  $form_state['values']['substance_custom']!=''){
+        $_SESSION['substanceChooseValue']=$form_state['values']['substance_custom'];
+		$form_state['redirect'] = 'substance-details/'.$form_state['values']['substance_custom'];
+		$custom_taxonomy=$form_state['values']['substance_custom'];
+	
+	// Get the Substance vocabulary ID.
+	$substance_vid = '2';
+	
+	   if($substance_vid!=''){	
+			/* Custom Taxonomy creation */
+		   
+			taxonomy_term_save((object) array(
+			  'name' => $custom_taxonomy,
+			  'vid' => $substance_vid,
+			  'description' => $custom_taxonomy,
+			  'format' => 'filtered_html',
+			  'weight' => 0,
+			));
+
+			drupal_set_message($custom_taxonomy.' taxonomy added successfully');
+		}else{
+		   drupal_set_message('Something went wrong please try again later.','error');
+		}
+   }else{
+		$_SESSION['substanceChooseValue']=$form_state['values']['substance_option'];
+		$form_state['redirect'] = 'substance-details/'.$form_state['values']['substance_option']; 
+
+   }
+   
+}
+
+function substance_details($sub_val){
+		
+    //echo "<pre>";print_r($_GET);die;
+    /* Get value from URL */
+    if(isset($_GET['q'])){
+		$substance=basename($_GET['q']);
+	}
+	
+	$form['Assessment-title5'] = array(
+		'#markup' => '<div class="assessment_page">' 
+	);
+	
+	$form["substance_mark_up"]=array(
+			"#markup"=>"<h3 class='selection_heading'>Substance: ".$substance."</h3>"
+	);
+	
+
+
+
+   $form['substance_options'] = array(
+	'#prefix'=>'<div class="select_section">',
+	'#suffix'=>'</div>',
+    '#type' => 'select',
+    '#required' => TRUE,
+    '#title' => t('Choose Indicator Type'),
+    '#options' => array('Consequence Indicator'=>"Consequence Indicator",'Consumption Indicator'=>"Consumption Indicator",'Social Indicator'=>"Social Indicator"),
+    '#attributes'=>array("onchange"=>"showIndicatorsBySelect(this)")
+  );
+  
+	
+	/* vid '4' means Consequence Indicator Texanomy terms which is configured in Drupal admin */
+	
+$consequence_indicators = db_query("SELECT name, name FROM {taxonomy_term_data} WHERE vid = 4")->fetchAllKeyed();
+
+  $consequence_indicators['Custom']="Custom";
+  
+  $form['cons_block_start']=array(
+		'#markup'=>"<div id='consequenceIndicator' style='display:none;'>"
+  );
+  
+  $form['consequence_options'] = array(
+    '#type' => 'radios',
+    '#title' => t('Consequence Indicator'),
+    '#options' => $consequence_indicators,
+    '#attributes'=>array("onclick"=>"conCustomTextfield(this)",'id'=>"conIndi")
+  );
+  $form['consequence_custom'] = array(
+		'#type' => 'textfield',
+		'#attributes'=>array("style"=>"display:none","id"=>"conCustom")
+  );
+    $form['cons_block_end']=array(
+		'#markup'=>'</div>'
+  );
+  
+  	/* vid '9' means Consequence Indicator Texanomy terms which is configured in Drupal admin */
+	
+$consumption_indicators = db_query("SELECT name, name FROM {taxonomy_term_data} WHERE vid = 9")->fetchAllKeyed();
+
+  $consumption_indicators['Custom']="Custom";
+  
+  $form['consump_block_start']=array(
+		'#markup'=>"<div id='consumptionIndicator' style='display:none;'>"
+  );
+  
+  $form['consumption_options'] = array(
+    '#type' => 'radios',
+    '#title' => t('Consumption Indicator'),
+    '#options' => $consumption_indicators,
+    '#attributes'=>array("onclick"=>"consCustomTextfield(this)",'id'=>"consumIndi")
+  );
+  $form['consumption_custom'] = array(
+		'#type' => 'textfield',
+		'#attributes'=>array("style"=>"display:none","id"=>"consCustom")
+  );
+  $form['consump_block_end']=array(
+		'#markup'=>'</div>'
+  );
+  
+    	/* vid '12' means Consequence Indicator Texanomy terms which is configured in Drupal admin */
+	
+$social_indicators = db_query("SELECT name, name FROM {taxonomy_term_data} WHERE vid = 12")->fetchAllKeyed();
+
+  $social_indicators['Custom']="Custom";
+  
+  $form['social_block_start']=array(
+		'#markup'=>"<div id='socialIndicator' style='display:none;'>"
+  );
+  
+  $form['social_options'] = array(
+    '#type' => 'radios',
+    '#title' => t('Social Indicator'),
+    '#options' => $social_indicators,
+    '#attributes'=>array("onclick"=>"socialCustomTextfield(this)",'id'=>"sociIndi")
+  );
+  $form['social_custom'] = array(
+		'#type' => 'textfield',
+		'#attributes'=>array("style"=>"display:none","id"=>"socialCustom")
+  );
+  
+  $form['social_block_end']=array(
+		'#markup'=>'</div>'
+  );
+  
+  $form['next_btn_div_start']=array('#markup'=>"<div class='assessment-nxt-btn'>");
+	  $form['submit_button'] = array(
+		'#type' => 'submit',
+		'#value' => t('Next'),
+	  );
+  $form['next_btn_div_end']=array('#markup'=>"</div>");
+  
+  $form['Assessment-title-5'] = array(
+  '#markup' => '</div>'
+  );
+  
+  $form['end_break']=array(
+		'#markup'=>'<br><br>'
+  );
+  
+   
+   return $form;
+
+}
+
+function assessment_form_submit($form, &$form_state) { //echo "<pre>";print_r($form_state['values']);die;
+
+   if(isset($form_state['values']['data_custom']) && $form_state['values']['data_custom']!=''){ 
+       
+       $data_source_value=$form_state['values']['data_custom'];
+			// Get the Datasource vocabulary ID.
+		$data_source_vid = '34';
+	
+	   if($data_source_vid!=''){	
+			/* Custom Taxonomy creation */
+		   
+			taxonomy_term_save((object) array(
+			  'name' => $data_source_value,
+			  'vid' => $data_source_vid,
+			  'description' => $data_source_value,
+			  'format' => 'filtered_html',
+			  'weight' => 0,
+			));
+
+			drupal_set_message($data_source_value.' taxonomy added successfully');
+		}else{
+		   drupal_set_message('Something went wrong please try again later.','error');
+		}
+   
+   }
+   if(isset($form_state['values']['population_custom']) && $form_state['values']['population_custom']!=''){ 
+		      $population_value=$form_state['values']['population_custom'];
+			// Get the Substance vocabulary ID.
+		$population_vid = '36';
+	
+	   if($population_vid!=''){	
+			/* Custom Taxonomy creation */
+		   
+			taxonomy_term_save((object) array(
+			  'name' => $population_value,
+			  'vid' => $population_vid,
+			  'description' => $population_value,
+			  'format' => 'filtered_html',
+			  'weight' => 0,
+			));
+
+			drupal_set_message($population_value.' taxonomy added successfully');
+		}else{
+		   drupal_set_message('Something went wrong please try again later.','error');
+		}
+   }
+   if(isset($form_state['values']['age_group_custom']) && $form_state['values']['age_group_custom']!=''){ 
+		      $age_value=$form_state['values']['age_group_custom'];
+			// Get the Substance vocabulary ID.
+		$age_vid = '37';
+	
+	   if($age_vid!=''){	
+			/* Custom Taxonomy creation */
+		   
+			taxonomy_term_save((object) array(
+			  'name' => $age_value,
+			  'vid' => $age_vid,
+			  'description' => $age_value,
+			  'format' => 'filtered_html',
+			  'weight' => 0,
+			));
+
+			drupal_set_message($age_value.' taxonomy added successfully');
+		}else{
+		   drupal_set_message('Something went wrong please try again later.','error');
+		}
+   }
+   if(isset($form_state['values']['site_or_campus_custom']) && $form_state['values']['site_or_campus_custom']!=''){ 
+		$site_value=$form_state['values']['site_or_campus_custom'];
+			// Get the Substance vocabulary ID.
+		$site_vid = '38';
+	
+	   if($site_vid!=''){	
+			/* Custom Taxonomy creation */
+		   
+			taxonomy_term_save((object) array(
+			  'name' => $site_value,
+			  'vid' => $site_vid,
+			  'description' => $site_value,
+			  'format' => 'filtered_html',
+			  'weight' => 0,
+			));
+
+			drupal_set_message($site_value.' taxonomy added successfully');
+		}else{
+		   drupal_set_message('Something went wrong please try again later.','error');
+		}
+   }
+
+   $_SESSION['assessmentDetailsKey']=$form_state;
+   
+   $form_state['redirect'] = 'assessment-details'; 
+  
+
+}
+
+function substance_details_submit($form, &$form_state){
+
+   if(isset($form_state['values']['consequence_custom']) && $form_state['values']['consequence_custom']!=""){
+       $consequence_value=$form_state['values']['consequence_custom'];
+       // Get the Substance vocabulary ID.
+		$indicator_vid = '4';
+	
+	   if($indicator_vid!=''){	
+			/* Custom Taxonomy creation */
+		   
+			taxonomy_term_save((object) array(
+			  'name' => $consequence_value,
+			  'vid' => $indicator_vid,
+			  'description' => $consequence_value,
+			  'format' => 'filtered_html',
+			  'weight' => 0,
+			));
+
+			drupal_set_message($consequence_value.' taxonomy added successfully');
+		}else{
+		   drupal_set_message('Something went wrong please try again later.','error');
+		}
+   }else{
+	   $consequence_value=$form_state['values']['consequence_options'];
+   }
+   if(isset($form_state['values']['consumption_custom']) && $form_state['values']['consumption_custom']!=""){
+       $consumption_value=$form_state['values']['consumption_custom'];
+       // Get the Substance vocabulary ID.
+		$cons_indicator_vid = '9';
+	
+	   if($cons_indicator_vid!=''){	
+			/* Custom Taxonomy creation */
+		   
+			taxonomy_term_save((object) array(
+			  'name' => $consumption_value,
+			  'vid' => $cons_indicator_vid,
+			  'description' => $consumption_value,
+			  'format' => 'filtered_html',
+			  'weight' => 0,
+			));
+
+			drupal_set_message($consumption_value.' taxonomy added successfully');
+		}else{
+		   drupal_set_message('Something went wrong please try again later.','error');
+		}
+   }else{
+	   $consumption_value=$form_state['values']['consumption_options'];
+   }
+      if(isset($form_state['values']['social_custom']) && $form_state['values']['social_custom']!=""){
+       $social_value=$form_state['values']['social_custom'];
+             // Get the Substance vocabulary ID.
+		$social_indicator_vid = '12';
+	
+	   if($social_indicator_vid!=''){	
+			/* Custom Taxonomy creation */
+		   
+			taxonomy_term_save((object) array(
+			  'name' => $social_value,
+			  'vid' => $social_indicator_vid,
+			  'description' => $social_value,
+			  'format' => 'filtered_html',
+			  'weight' => 0,
+			));
+
+			drupal_set_message($social_value.' taxonomy added successfully');
+		}else{
+		   drupal_set_message('Something went wrong please try again later.','error');
+		}
+       
+   }else{
+	   $social_value=$form_state['values']['social_options'];
+   }
+   
+   if($consequence_value!=""){ $indicator_value=$consequence_value; }
+   if($consumption_value!=""){ $indicator_value=$consumption_value; }
+   if($social_value!=""){ $indicator_value=$social_value; }
+   
+   $_SESSION['indicatorChooseValue']=$indicator_value;
+   
+   $form_state['redirect'] = 'assessment-form/'.$indicator_value;
+
+}
+
+function assessment_form_form($form){
+	$table_data = array();
+	$output = '';
+	
+	foreach(element_children($form['some_options']) as $name){
+		if($name != 'custom'){
+			$table_data[] = array(
+				/* put normal options to table */
+				drupal_render($form['some_options'][$name])
+			);
+		} else {
+			$table_data[] = array(
+				drupal_render($form['some_options']['other']),
+				drupal_render($form['other'])
+				/* or drupal_render($form['some_options']['other']).' '.drupal_render($form['other']) to put it in one cell*/
+			);
+		}
+		/**
+		 * You can also put all to the $output without theme_table and then return it
+		 * example:
+		 * if($name != 'other'){
+		 * 	$output .= ''.drupal_render($form['some_options'][$name]).'';
+		 * } else {
+		 * 	$output .= ''.drupal_render($form['some_options'][$name]).' '.drupal_render($form['other']).'';
+		 * }
+		 * 
+		 * $output .= drupal_render($form);
+		 * 
+		 * return $output;
+		 */ 
+	}
+	/* put your headers or leave it empty */
+	$headers = array();
+	
+	$table = theme_table($headers,$table_data);
+	
+	/* send Your table to output */
+	$output .= $table;
+	
+	/* to render all others element user drupal_render($form) */
+	$output .= drupal_render($form);
+	return $output;
+}
+
+function is_url_exist($url) {
+    $ch = curl_init($url);
+    curl_setopt($ch, CURLOPT_NOBODY, true);
+    curl_exec($ch);
+    $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+
+    if ($code == 200) {
+        $status = true;
+    } else {
+        $status = false;
+    }
+    curl_close($ch);
+    return $status;
+}
+
+?>

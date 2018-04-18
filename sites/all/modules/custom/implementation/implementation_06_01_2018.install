@@ -1,0 +1,199 @@
+<?php
+
+/**
+ * @file
+ * implemetation installation functions.
+ */
+
+/**
+ * Implementation of hook_install().
+ */
+function implementation_schema() {
+
+       $schema['implementation_details'] = array(
+        'description' => 'The table for storing the implementation data.',
+        'fields' => array(
+                 'implementation_id' => array (
+                 'description' => t('The unique Row ID'),
+                 'type' => 'serial',
+               ),
+                  'contributing_factor_models' => array(
+                'description' => 'Contributing factor Logic models',
+                'type' => 'text',
+                'size' => 'big',
+            ),
+            
+            'intervention_models' => array(
+                'description' => 'Interventions Logic models',
+                'type' => 'text',
+                'size' => 'big',
+            ),
+
+                'personConductingContent' => array(
+                'description' => 'Staff list',
+                'type' => 'text',
+                'size' => 'big',
+            ),
+                
+                'startdatetime' => array(
+                'description' => 'Date of Data',
+                'type' => 'varchar',
+                'length' => 255,
+
+            ),
+
+                'enddatetime' => array(
+                'description' => 'Date of Data',
+                'type' => 'varchar',
+                'length' => 255,
+       
+            ),
+
+               'Length_of_services' => array(
+                'description' => 'Length of services',
+                'type' => 'varchar',
+                'length' => 255,
+            ),
+
+                'location' => array(
+                'description' => 'location',
+                'type' => 'varchar',
+                'length' => 255,
+            ),
+
+                'country' => array(
+                'description' => 'Country',
+                'type' => 'varchar',
+                'length' => 255,
+                
+            ),
+
+               'address_1' => array(
+                'description' => 'Address 2',
+                'type' => 'varchar',
+                'length' => 255,
+             
+            ),
+
+                'address_2' => array(
+                'description' => 'Address 2',
+                'type' => 'varchar',
+                'length' => 255,
+              
+            ),
+
+                'city' => array(
+                'description' => 'city',
+                'type' => 'varchar',
+                'length' => 255,
+            ),
+
+                'states' => array(
+                'description' => 'states',
+                'type' => 'varchar',
+                'length' => 255,
+        
+            ),
+
+                'zip_code' => array(
+                'description' => 'zip code',
+                'type' => 'varchar',
+                'length' => 255,
+         
+            ),
+
+                'number_adult_served' => array(
+                'description' => 'Number of adult served',
+                'type' => 'varchar',
+                'length' => 255,
+               
+            ),
+
+                'number_youth_served' => array(
+                'description' => 'Number of youth served',
+                'type' => 'varchar',
+                'length' => 255,
+             
+            ),
+
+                'Number_Business_Attending' => array(
+                'description' => 'Number of Business Attending',
+                'type' => 'varchar',
+                'length' => 255,
+               
+            ),
+
+                'Members_Invloved' => array(
+                'description' => 'Members Invloved',
+                'type' => 'text',
+                'size' => 'big',
+              
+            ),
+
+                'description_of_purpose' => array(
+                'description' => 'Description of purpose',
+                'type' => 'varchar',
+                'length' => 225,
+               
+            ),
+
+                'description_of_outcome' => array(
+                'description' => 'Description of outcome',
+                'type' => 'varchar',
+                'length' => 225,
+               
+            ),
+
+               'Donation_select' => array(
+                'description' => 'Donation_select',
+                'type' => 'varchar',
+                'length' => 225,
+               
+            ),
+
+                'Monetary_Value' => array(
+                'description' => 'Monetary Value',
+                'type' => 'varchar',
+                'length' => 225,
+              
+            ),
+
+                'Comment' => array(
+                'description' => 'comment',
+                'type' => 'varchar',
+                'length' => 225,
+           
+            ),
+
+                'Attachments_fid' => array(
+                'description' => 'file',
+                'type' => 'varchar',
+                'length' => 255,
+              
+            ),
+
+                'Attachments_notes' => array(
+                'description' => 'Attachments notes',
+                'type' => 'varchar',
+                'length' => 225,
+           
+            ),
+               'is_pending' => array(
+                'description' => 'Pending',
+                'type' => 'varchar',
+                'length' => 10,
+           
+            ),
+                'signature' => array(
+                'description' => 'Attachments notes',
+                'type' => 'int',
+                'length' => 10,
+           
+            ),
+        ),
+        'primary key' => array('implementation_id'),
+    );
+    return $schema;
+}
+
+

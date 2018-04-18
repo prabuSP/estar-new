@@ -1,0 +1,310 @@
+<?php
+
+/**
+ * Implementation of hook_menu
+ */
+function filesystem_library_menu() {
+    $menu = array();
+
+    $menu['file_system_library'] = array
+    (
+      'title' => 'Library / Filesystem',
+      'page callback' => 'drupal_get_form',
+      'page arguments' => array('capacity_file_list_form', 1),
+      'access arguments' => array('filelist mymodule items'),
+        'access callback' => TRUE,
+      //'type' => MENU_LOCAL_TASK,
+    );
+
+    $menu['file_system_library/delete'] = array(
+        'title' => 'Delete Files',
+        'page callback' => 'drupal_get_form',
+        'page arguments' => array('file_system_delete_item_form',1) ,
+        'access arguments' => array('Delete Contact items') ,
+        'access callback' => true,
+    );
+
+    $menu['file_system_library/add'] = array(
+        'title' => 'Upload Files',
+        'page callback' => 'drupal_get_form',
+        'page arguments' => array('file_system_add_item_form',1) ,
+        'access arguments' => array('Delete Contact items') ,
+        'access callback' => true,
+    );
+
+    return $menu;
+}
+
+function file_system_add_item_form(){
+global $base_url;
+$form['Attachments_files'] = array(
+    '#markup' => '<div class="responsive_table">
+    <table id="myTable2" class="table order-list-att">
+      <tr><th>Upload File</th><th>File Category</th><th>Notes</th></tr>' . '<tr><td class="table_heading">',
+    );
+
+	$form['Attachments_fid'] = array(
+    '#type' => 'managed_file_multiple',
+    '#title' => 'Upload New File',
+    '#upload_validators' => array(
+        'file_validate_extensions' => array(
+            'doc docx jpg pdf png ppt pptx txt xls xlsx'
+        )
+    ) ,
+
+    '#upload_location' => 'public://common_documents/',
+    '#description' => t('<br>Please use the Choose file button to attach a response document<br><strong>Allowed extensions: doc docx jpg pdf png ppt pptx txt xls xlsx</strong>.') ,
+    //'#prefix' => '<td class="table_heading">',
+    '#prefix' => '<td class="table_heading">',
+        '#suffix' => '</td>
+    ',
+    );
+
+$form['file_type'] = array(
+    '#type' => 'select',
+    '#options' => array(
+        '' => "<-- Choose Category -->",
+        'Assessment' => "Assessment",
+        'Capacity' => "Capacity",
+        'Planning' => "Planning",
+        'Implementation' => "Implementation",
+        'Evaluation' => "Evaluation",
+        'Sustainability' => "Sustainability",
+        'Cultural' => "Cultural",
+        'Competencies' => "Competencies",
+    ) ,
+            '#required'=>TRUE,
+    '#prefix' => '<td class="table_heading"><div class="select_section">',
+    '#suffix' => '</div></td>',
+    );
+
+
+
+	$form['Comment'] = array(
+        '#prefix' => '<td class="table_heading">',
+        '#type' => 'textarea',
+        '#rows' => 5,
+        '#cols' => 30,
+        '#suffix' => '</td></tr>
+        </table></div>', // Don't forget to close the table rows, and finally the table.
+        '#default_value' => $item->Comment,
+    );
+
+
+
+$form['next_btn_div_start2'] = array(
+    '#markup' => "<div class='next_button btn-separator assessment-nxt-btn capacity-btn'>"
+);
+$form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Save file') ,
+);
+$form['next_btn_div_end2'] = array(
+    '#markup' => "</div>"
+);
+
+$form['next_btn_div_start3'] = array(
+    '#markup' => "<div class='next_button assessment-nxt-btn capacity-btn'>"
+);
+$form['submit2'] = array(
+  '#type' => 'button',
+  '#attributes' => array('onClick' => 'location.replace("'.$base_url.'/file_system_library"); return false;'),
+    '#value' => t('Cancel') ,
+);
+$form['next_btn_div_end3'] = array(
+    '#markup' => "</div>"
+);
+
+return $form;
+
+}
+
+function file_system_add_item_form_submit($form, &$form_state){
+//echo "<pre>";print_r($_REQUEST);die;
+
+      if(isset($_REQUEST['Attachments_fid']['files']) && count($_REQUEST['Attachments_fid']['files'])){
+            $fileType=$_REQUEST['file_type'];
+            foreach ($_REQUEST['Attachments_fid']['files'] as $fKey => $fValue) {
+                    //echo "<pre>";print_r($fKey);die;
+                    if($fKey!=''){
+                        $num_updated = db_insert('file_usage') // Table name no longer needs {}
+                              ->fields(array(
+                                'fid'=>$fKey,
+                                'module' => $fileType,
+                                'type'=>'field_collection_item',
+                                'id'=>$fKey,
+                                'count'=>1
+                              ))->execute();
+                    }
+            }
+      }
+
+          $form_state['redirect'] = 'file_system_library';
+          drupal_set_message("File uploaded successfully");
+}
+
+
+
+/**
+ * [estar get all contacts list]
+ * @param  [type] $node [description]s
+ * @return [type]       [description]
+ */
+
+ function capacity_file_list_form(){
+     $base_url = $GLOBALS['base_url'];
+   //$file_upload_details = db_query("SELECT * FROM {file_managed}")->fetchAll();
+   $imp_upload_details = db_query("SELECT implementation_id,Attachments_notes,Strategies,Attachments_fid FROM {implementation_details}")->fetchAll();
+   $cap_upload_details = db_query("SELECT capacity_id,Attachments_notes,Record,Attachments_fid FROM {capacity_details}")->fetchAll();
+   $common_file_upload_details = db_query("SELECT id,module FROM {file_usage} WHERE module='common' OR module='Assessment' OR module='Capacity' OR module='Planning' OR module='Implementation' OR module='Evaluation' OR module='Sustainability' OR module='Cultural' OR module='Competencies'")->fetchAll();
+   //echo "<pre>";print_r($file_upload_details);die;
+
+   $form['add_new_file']=array('#markup'=>'<div class="assessment-nxt-btn plus-sign"><a class="form-submit" href="file_system_library/add"> Add New File<i class="fa fa-upload" aria-hidden="true"></i> </a></div>');
+
+   $form['fileSystem'] = array(
+       '#markup' => '<div class="responsive_table">
+       <table id="fileSystemTab" class="sticky-enabled table-select-processed">
+ <thead><tr>
+ <th>Title</th><th>Date Uploaded</th><th>Type</th><th>Category</th><th>Owner</th><th>Notes</th><th>Actions</th> </tr></thead>
+ <tbody>'
+   );
+ $format_array=array('text/plain'=>"txt",'application/pdf'=>"PDF",'application/msword'=>"DOC",'application/vnd.openxmlformats-officedocument.wordprocessingml.document'=>"DOCX",'image/png'=>"PNG",'application/vnd.ms-excel'=>"XLS");
+
+/* Implementation List Start */
+
+$fileListRow=get_all_file_lists($imp_upload_details,$cap_upload_details,$category='Implementation',$format_array);
+
+/* Capacity List Start */
+
+$fileListRow.=get_all_file_lists($imp_upload_details,$cap_upload_details,$category='Capacity',$format_array);
+
+/* Common File lists */
+if(isset($common_file_upload_details) && count($common_file_upload_details)>0){
+foreach($common_file_upload_details as $fKey=> $fileId){ //echo $fileId->id."<pre>";print_r($fileId);die;
+
+    $file_upload_details = db_query("SELECT * FROM {file_managed} WHERE fid = " . $fileId->id)->fetchAll();
+    $fURI = $file_upload_details[0]->uri;
+    $fname = $file_upload_details[0]->filename;
+
+       $user=user_load($file_upload_details[0]->uid);
+       $personConducting=$user->name;
+
+    $uploadedDate = date("F j, Y, g:i a",$file_upload_details[0]->timestamp);
+
+   $fileType=$file_upload_details[0]->filemime;
+   $fileExtension=$format_array[$fileType];
+  $fileURI=file_create_url($fURI);
+   if(isset($fileId->module) && $fileId->module!="common"){
+        $category=$fileId->module;
+   }else{ $category="Common Files"; }
+  if($fname!=""){
+
+     $fileListRow .= '<tr class="odd">
+        <td>' . (($fname != "") ? $fname : "") . '</td>
+        <td>' . (($uploadedDate != "") ? $uploadedDate : "") . '</td>
+        <td>' . (($fileExtension != "") ? $fileExtension : "") . '</td>
+        <td>' . (($category != "") ? $category : "") . '</td>
+        <td>' . (($personConducting != "") ? $personConducting : "") . '</td>
+        <td>' . (($notes != "") ? $notes : "") . '</td>
+        <td><a href="' .$fileURI. '"><i class="fa fa-download fa-lg" aria-hidden="true"></i></a>
+           <a href="file_system_library/delete/'.$file_upload_details[0]->fid.'"><i class="fa fa-trash-o fa-lg del-docs" aria-hidden="true"></i></a>
+       </td></tr>';
+
+      }
+  }
+}
+      $form['fileSystemContent'] = array(
+          '#markup' => $fileListRow,
+      );
+
+      $form['fileSystemEnd'] = array(
+          '#markup' => '</tbody></table></div>'
+      );
+
+   return $form;
+ }
+
+
+function get_all_file_lists($imp_upload_details,$cap_upload_details,$category,$format_array){
+
+     if(isset($category) && $category=="Implementation"){
+              $imp_upload_details=$imp_upload_details;
+     }else{
+              $imp_upload_details=$cap_upload_details;
+     }
+
+     if(isset($imp_upload_details) && count($imp_upload_details)>0){
+       foreach ($imp_upload_details as $impFid) {
+              if($impFid->Attachments_fid!=""){
+                    $imp_file_upload_details=unserialize($impFid->Attachments_fid);
+                  if(isset($category) && $category=="Implementation"){
+                      $imp_category=$category.' - '.$impFid->Strategies;
+                      $title_link="<a href='implementation/'>";
+                  }else{
+                      $imp_category=$category.' - '.$impFid->Record;
+                  }
+                  $attachmentNotes=$impFid->Attachments_notes;
+                   foreach($imp_file_upload_details['upload_id'] as $uploadId){ //echo "<pre>";print_r($imp_upload_details);die;
+
+                      $file_upload_details = db_query("SELECT * FROM {file_managed} WHERE fid = " . $uploadId)->fetchAll();
+                      $fURI = $file_upload_details[0]->uri;
+                      $fname = $file_upload_details[0]->filename;
+
+                         $user=user_load($file_upload_details[0]->uid);
+                         $personConducting=$user->name;
+
+                      $uploadedDate = date("F j, Y, g:i a",$file_upload_details[0]->timestamp);
+
+                     $fileType=$file_upload_details[0]->filemime;
+                     $fileExtension=$format_array[$fileType];
+                     $fileURI=file_create_url($fURI);
+
+                     if($fname!=""){
+
+                       if(isset($category) && $category=="Implementation"){
+                           $title_link="<a href='implementation/$impFid->implementation_id/edit'>$fname</a>";
+                       }else{
+                           $title_link="<a href='capacity/$impFid->capacity_id/edit'>$fname</a>";
+                       }
+
+                       $fileListRow .= '<tr class="odd">
+                          <td>' . (($title_link != "") ? $title_link : "") . '</td>
+                          <td>' . (($uploadedDate != "") ? $uploadedDate : "") . '</td>
+                          <td>' . (($fileExtension != "") ? $fileExtension : "") . '</td>
+                          <td>' . (($imp_category != "") ? $imp_category : "") . '</td>
+                          <td>' . (($personConducting != "") ? $personConducting : "") . '</td>
+                          <td>' . (($attachmentNotes != "") ? $attachmentNotes : "") . '</td>
+                          <td><a href="' .$fileURI. '"><i class="fa fa-download fa-lg" aria-hidden="true"></i></a>
+                             <a href="file_system_library/delete/'.$file_upload_details[0]->fid.'"><i class="fa fa-trash-o fa-lg del-docs" aria-hidden="true"></i></a>
+                         </td></tr>';
+
+                        }
+                    }
+  }
+}
+
+}
+
+return $fileListRow;
+
+}
+
+
+ function file_system_delete_item_form($form,&$form_state){
+     $url = (isset($_SERVER['HTTPS']) ? "https" : "http") . "://$_SERVER[HTTP_HOST]$_SERVER[REQUEST_URI]";
+      $fId= basename($url);
+      if(isset($fId) && $fId!=""){
+            $del_res = db_delete('file_managed')
+                           ->condition('fid', $fId)
+                           ->execute();
+       }
+       if(isset($del_res) && $del_res!=""){
+           drupal_goto('file_system_library');
+       }else{
+         return $form;
+       }
+
+ }
+
+
+?>
